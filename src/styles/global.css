@@ -1,0 +1,413 @@
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap');
+
+/* ─────────────────────────────────────────────────────────────────────────
+   Tanker Font Definition (Direct Fontshare WOFF2 declaration from Ogrebrain)
+   ───────────────────────────────────────────────────────────────────────── */
+@font-face {
+  font-family: 'Tanker';
+  src: url('https://cdn.fontshare.com/wf/ATKS7EHYU4PKFTXRA4UFAHPY7XS75QMY/OYTCFLQCR7FVKK7FIO7TCJPY4YG22I3S/GKSURDSYOFIC3Y6F5SMWSENDSAB2YMKC.woff2') format('woff2'),
+       url('https://cdn.fontshare.com/wf/ATKS7EHYU4PKFTXRA4UFAHPY7XS75QMY/OYTCFLQCR7FVKK7FIO7TCJPY4YG22I3S/GKSURDSYOFIC3Y6F5SMWSENDSAB2YMKC.woff') format('woff');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   Ogre Suite Design System — Direct Port from Ogrebite / Ogrebuddy / Ogrebrain
+   Header/Display font: Tanker
+   Mono font: IBM Plex Mono / Space Mono
+   ───────────────────────────────────────────────────────────────────────── */
+
+:root {
+  /* Ogre Mascot Face Palettes (Matching reference image) */
+  --ogre-face: #92a9ff;    /* Light periwinkle blue face */
+  --ogre-mane: #9d1bb2;    /* Scalloped purple mane/ring */
+  --ogre-horn: #e7f536;    /* Bright yellow horns / teeth */
+  --ogre-brow: #38e268;    /* Green eyebrows */
+  --ogre-eye: #ffffff;     /* White eyes */
+  --ogre-pupil: #ff0077;   /* Hot pink pupils / tongue */
+  --ogre-outline: #111111; /* Black ink outline */
+
+  /* Bodega Theme Defaults (Purple paper, graffiti ink, leaf green) */
+  --purple-paper: #ede4f7;
+  --purple-paper-2: #e0d2ee;
+  --purple-deep-paper: #cbb7df;
+  --off-white: #faf7fd;
+  --ink: #111111;
+  --ink-2: #2a2a2a;
+  --ink-3: #6b6358;
+  --leaf: #00a542;
+  --leaf-deep: #007a30;
+
+  --bg-primary: var(--purple-paper);
+  --bg-card: var(--off-white);
+  --bg-header: var(--purple-paper-2);
+  --text-main: var(--ink);
+  --text-muted: var(--ink-3);
+  --border-color: var(--ink);
+  --accent-color: var(--leaf);
+
+  --font-display: 'Tanker', 'Space Grotesk', system-ui, sans-serif;
+  --font-mono: 'IBM Plex Mono', 'Space Mono', monospace;
+}
+
+/* Ogre SVG Mascot Fill Classes (Required for SVG_OGRE coloring) */
+svg#SVG_OGRE .cls-1, svg.ogre-face .cls-1 { fill: var(--ogre-horn) !important; }
+svg#SVG_OGRE .cls-2, svg.ogre-face .cls-2 { fill: var(--ogre-eye) !important; }
+svg#SVG_OGRE .cls-3, svg.ogre-face .cls-3 { fill: var(--ogre-mane) !important; }
+svg#SVG_OGRE .cls-4, svg.ogre-face .cls-4 { fill: var(--ogre-brow) !important; }
+svg#SVG_OGRE .cls-5, svg.ogre-face .cls-5 { fill: var(--ogre-pupil) !important; }
+svg#SVG_OGRE .cls-6, svg.ogre-face .cls-6 { fill: var(--ogre-face) !important; }
+
+/* Mouth Viseme Color Classes */
+svg#SVG_OGRE .m-teeth, .m-teeth { fill: var(--ogre-horn, #e7f536) !important; }
+svg#SVG_OGRE .m-dark, .m-dark   { fill: var(--ogre-outline, #111111) !important; }
+svg#SVG_OGRE .m-tongue, .m-tongue { fill: var(--ogre-pupil, #ff0077) !important; }
+
+/* SVG face animation base & transforms */
+.ogre-L-eyeball, .ogre-R-eyeball,
+.ogre-L-eyeball-outline, .ogre-R-eyeball-outline,
+.ogre-L-pupil, .ogre-R-pupil,
+.ogre-L-eyebrow, .ogre-R-eyebrow, .ogre-L-eyebrow-outline, .ogre-R-eyebrow-outline,
+.ogre-Mouth, .ogre-Mouth-outline, .ogre-fangs, .ogre-Nose-outline,
+#L-eyelid, #R-eyelid {
+  transform-box: fill-box;
+  transform-origin: center center;
+}
+
+/* Viseme Mouth Visibility Rules (Ported from Ogrebuddy popup.js) */
+svg#SVG_OGRE[data-mouth] #Mouth,
+svg#SVG_OGRE[data-mouth] #Mouth-outline,
+svg#SVG_OGRE[data-mouth] #fangs { visibility: hidden !important; }
+
+svg#SVG_OGRE #mouth-A,
+svg#SVG_OGRE #mouth-B,
+svg#SVG_OGRE #mouth-C,
+svg#SVG_OGRE #mouth-D,
+svg#SVG_OGRE #mouth-E,
+svg#SVG_OGRE #mouth-F,
+svg#SVG_OGRE #mouth-G,
+svg#SVG_OGRE #mouth-H,
+svg#SVG_OGRE #mouth-X { visibility: hidden; }
+
+svg#SVG_OGRE[data-mouth="A"] #mouth-A,
+svg#SVG_OGRE[data-mouth="B"] #mouth-B,
+svg#SVG_OGRE[data-mouth="C"] #mouth-C,
+svg#SVG_OGRE[data-mouth="D"] #mouth-D,
+svg#SVG_OGRE[data-mouth="E"] #mouth-E,
+svg#SVG_OGRE[data-mouth="F"] #mouth-F,
+svg#SVG_OGRE[data-mouth="G"] #mouth-G,
+svg#SVG_OGRE[data-mouth="H"] #mouth-H,
+svg#SVG_OGRE[data-mouth="X"] #mouth-X { visibility: visible !important; }
+
+/* Automatic Eye Blink Animation */
+#L-eyelid, #R-eyelid {
+  transform-origin: center top;
+}
+
+@keyframes blinkLid {
+  0%, 90%, 100% { transform: scaleY(0); }
+  93%, 97% { transform: scaleY(1.1); }
+}
+
+svg#SVG_OGRE #L-eyelid,
+svg#SVG_OGRE #R-eyelid {
+  animation: blinkLid 4.2s ease-in-out infinite;
+}
+
+/* Bodega Neon Theme Variant (Night Storefront Mode) */
+body.theme-neon {
+  --neon-plum: #c77dff;
+  --neon-pink: #ff4fa3;
+  --neon-cyan: #5cf2ff;
+  --neon-amber: #ffc24b;
+  --neon-green: #54f08a;
+  --night: #120a1e;
+  --panel: #1a0f2b;
+
+  /* Neon Ogre Mascot Palette */
+  --ogre-face: #5cf2ff;
+  --ogre-mane: #c77dff;
+  --ogre-horn: #ffc24b;
+  --ogre-brow: #54f08a;
+  --ogre-pupil: #ff4fa3;
+
+  --bg-primary: radial-gradient(120% 80% at 50% -10%, #2a1748 0%, var(--night) 55%);
+  --bg-card: var(--panel);
+  --bg-header: linear-gradient(180deg, #0c0717 0%, #1a0f2b 100%);
+  --text-main: #f3e9ff;
+  --text-muted: #b8a6d9;
+  --border-color: var(--neon-cyan);
+  --accent-color: var(--neon-green);
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html, body {
+  background: var(--bg-primary);
+  color: var(--text-main);
+  font-family: var(--font-mono);
+  min-height: 100vh;
+  line-height: 1.5;
+  overflow-x: hidden;
+}
+
+/* Halftone newsprint texture overlay on page body */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background-image: radial-gradient(rgba(17,17,17,0.14) 1px, transparent 1.4px);
+  background-size: 6px 6px;
+  pointer-events: none;
+  opacity: 0.55;
+  z-index: 1;
+  mix-blend-mode: multiply;
+}
+
+body.theme-neon::before {
+  opacity: 0.18;
+  mix-blend-mode: overlay;
+}
+
+h1, h2, h3, h4, .brand-title, .card-title, .stamp-pill, .replay-btn {
+  font-family: var(--font-display);
+  font-weight: 400;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+body.theme-neon h1, 
+body.theme-neon h2, 
+body.theme-neon h3,
+body.theme-neon .brand-title {
+  text-shadow: 0 0 8px rgba(92, 242, 255, 0.5);
+}
+
+a {
+  color: var(--text-main);
+  text-decoration: none;
+}
+
+/* Sticker & Stamp styling */
+.stamp-pill {
+  display: inline-block;
+  font-family: var(--font-display);
+  font-size: 0.85rem;
+  font-weight: 400;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  padding: 4px 10px;
+  border: 2px solid var(--text-main);
+  background: var(--bg-primary);
+  color: var(--text-main);
+  box-shadow: 3px 3px 0 var(--text-main);
+  transform: rotate(-1deg);
+}
+
+body.theme-neon .stamp-pill {
+  border-color: var(--neon-cyan);
+  color: var(--neon-cyan);
+  background: #140b24;
+  box-shadow: 0 0 8px rgba(92, 242, 255, 0.4), inset 0 0 5px rgba(92, 242, 255, 0.15);
+  text-shadow: 0 0 5px rgba(92, 242, 255, 0.7);
+}
+
+/* Bodega Card Component */
+.bodega-card {
+  background: var(--bg-card);
+  border: 2px solid var(--text-main);
+  padding: 1.5rem;
+  box-shadow: 4px 4px 0 var(--text-main);
+  transition: all 0.2s ease;
+  position: relative;
+}
+
+.bodega-card:hover {
+  transform: translate(-2px, -2px);
+  box-shadow: 6px 6px 0 var(--text-main);
+}
+
+body.theme-neon .bodega-card {
+  border: 1.5px solid var(--neon-cyan);
+  box-shadow: 0 0 14px rgba(92, 242, 255, 0.3), inset 0 0 8px rgba(92, 242, 255, 0.08);
+}
+
+body.theme-neon .bodega-card:hover {
+  border-color: var(--neon-pink);
+  box-shadow: 0 0 20px rgba(255, 79, 163, 0.5), inset 0 0 10px rgba(255, 79, 163, 0.15);
+}
+
+/* Full-Width Header Storefront Styling (Solid paper background + clean diagonal purple stripes) */
+.app-header {
+  position: relative;
+  width: 100%;
+  border-bottom: 3px solid var(--text-main);
+  background-color: var(--purple-paper-2);
+  background-image: repeating-linear-gradient(135deg, var(--purple-paper-2) 0 10px, rgba(145, 100, 195, 0.35) 10px 11px);
+  z-index: 10;
+}
+
+.header-inner {
+  max-width: 1080px;
+  width: 100%;
+  margin: 0 auto;
+  padding: 1.25rem 1.75rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+body.theme-neon .app-header {
+  background-color: #0c0717;
+  background-image: repeating-linear-gradient(90deg, #1b1030 0 2px, transparent 2px 4px);
+  border-bottom: 2px solid #000;
+  box-shadow: 0 6px 0 rgba(0, 0, 0, 0.5);
+}
+
+/* Neon storefront underglow line */
+body.theme-neon .app-header::after {
+  content: '';
+  position: absolute;
+  left: 0; right: 0; bottom: -3px; height: 3px;
+  background: linear-gradient(90deg, transparent 0%, var(--neon-pink) 18%, var(--neon-plum) 50%, var(--neon-cyan) 82%, transparent 100%);
+  box-shadow: 0 0 10px var(--neon-pink), 0 0 20px rgba(199, 125, 255, 0.7);
+}
+
+/* Full-Width Dotted Purple Footer (Matching reference screenshot) */
+.app-footer {
+  width: 100%;
+  border-top: 3px solid #8b3ab8;
+  background-color: #0d051a;
+  background-image: radial-gradient(rgba(180, 120, 240, 0.38) 1.5px, transparent 1.5px);
+  background-size: 7px 7px;
+  color: #e2d3f5;
+  margin-top: 3.5rem;
+  z-index: 10;
+  position: relative;
+}
+
+body.theme-neon .app-footer {
+  border-top: 3px solid var(--neon-pink);
+  background-color: #080311;
+  background-image: radial-gradient(rgba(92, 242, 255, 0.35) 1.5px, transparent 1.5px);
+  background-size: 7px 7px;
+  color: var(--neon-cyan);
+  box-shadow: 0 -4px 22px rgba(255, 79, 163, 0.3);
+}
+
+.footer-inner {
+  max-width: 1080px;
+  width: 100%;
+  margin: 0 auto;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Terminal Status Bar Row (Matching reference screenshot) */
+.footer-status-bar {
+  padding: 0.85rem 1.75rem;
+  border-bottom: 2px solid #6b21a8;
+  background: rgba(13, 5, 26, 0.85);
+  font-family: var(--font-mono);
+  font-size: 0.95rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  color: #c084fc;
+  text-shadow: 0 0 8px rgba(192, 132, 252, 0.5);
+}
+
+body.theme-neon .footer-status-bar {
+  border-bottom-color: var(--neon-pink);
+  color: var(--neon-cyan);
+  text-shadow: 0 0 10px rgba(92, 242, 255, 0.6);
+}
+
+.terminal-prompt {
+  color: #d946ef;
+  font-weight: 800;
+  font-size: 1.1rem;
+  text-shadow: 0 0 10px #d946ef, 0 0 18px rgba(217, 70, 239, 0.5);
+}
+
+@keyframes cursorBlink {
+  0%, 49% { opacity: 1; }
+  50%, 100% { opacity: 0; }
+}
+
+.status-cursor {
+  display: inline-block;
+  color: #d946ef;
+  font-weight: 800;
+  margin-left: 2px;
+  animation: cursorBlink 1s step-start infinite;
+  text-shadow: 0 0 8px #d946ef;
+}
+
+/* Bottom Info / Navigation Row */
+.footer-info-row {
+  padding: 1.25rem 1.75rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 1rem;
+  background: rgba(10, 3, 20, 0.75);
+}
+
+.footer-info-lines {
+  font-size: 0.82rem;
+  color: #bda8db;
+}
+
+body.theme-neon .footer-info-lines {
+  color: var(--text-muted);
+}
+
+.footer-nav-buttons {
+  display: flex;
+  gap: 0.65rem;
+}
+
+.info-cog {
+  background: #230d3b;
+  border: 2px solid #a855f7;
+  color: #e2d3f5;
+  padding: 0.45rem 0.75rem;
+  font-size: 0.85rem;
+  cursor: pointer;
+  box-shadow: 2px 2px 0 #000000;
+  transition: all 0.15s ease;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+}
+
+.info-cog:hover {
+  transform: translate(-1px, -1px);
+  background: #9333ea;
+  color: #ffffff;
+  border-color: #ffffff;
+  box-shadow: 0 0 10px rgba(168, 85, 247, 0.6);
+}
+
+body.theme-neon .info-cog {
+  background: #140b24;
+  border-color: var(--neon-cyan);
+  box-shadow: 0 0 8px rgba(92, 242, 255, 0.3);
+  color: var(--neon-cyan);
+}
+
+body.theme-neon .info-cog:hover {
+  border-color: var(--neon-pink);
+  color: var(--neon-pink);
+  box-shadow: 0 0 12px rgba(255, 79, 163, 0.5);
+}

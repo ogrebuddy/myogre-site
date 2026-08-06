@@ -1,0 +1,189 @@
+---
+import '../styles/global.css';
+
+export interface Props {
+  title?: string;
+  description?: string;
+}
+
+const { 
+  title = "MyOgre — Robin's Personal Assistant & Ogre Suite",
+  description = "MyOgre personal assistant, virtual companion, and ecosystem experiments."
+} = Astro.props;
+---
+
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <meta name="generator" content={Astro.generator} />
+
+    <title>{title}</title>
+    <meta name="title" content={title} />
+    <meta name="description" content={description} />
+  </head>
+  <body>
+    <div class="app-wrapper">
+      <header class="app-header">
+        <div class="header-inner">
+          <div class="header-branding">
+            <a href="/" class="logo-link" title="MyOgre Home">
+              <div class="header-mascot-mini" id="header-mascot-mini">
+                <img src="/assets/buddy-purple.png" alt="Ogre Logo" class="header-logo-img" />
+              </div>
+              <img src="/assets/WEBLOGO.svg" alt="MyOgre Logo" class="header-weblogo-svg" />
+            </a>
+          </div>
+
+          <div class="header-actions">
+            <button type="button" id="theme-toggle-btn" class="stamp-pill theme-toggle-btn" title="Toggle Day / Neon Mode">
+              🌙 Neon Mode
+            </button>
+          </div>
+        </div>
+      </header>
+
+      <main class="main-container">
+        <slot />
+      </main>
+
+      <footer class="app-footer">
+        <div class="footer-inner">
+          <div class="footer-status-bar" id="status-bar">
+            <span class="terminal-prompt">&gt;</span>
+            <span id="footer-status-text">MyOgre online — still evolving</span>
+            <span class="status-cursor">_</span>
+          </div>
+          <div class="footer-info-row" id="address-bar-bottom">
+            <div class="footer-info-lines">
+              <div class="info-line-zone">
+                <strong style="color: #f0e6ff;">MyOgre</strong>
+                <span style="opacity: 0.6;"> — </span>
+                <span>Personal Companion &amp; Suite Portfolio</span>
+              </div>
+              <div style="font-size: 0.78rem; opacity: 0.85; margin-top: 2px;">
+                &copy; {new Date().getFullYear()} Robin / Ogre Ecosystem
+              </div>
+            </div>
+            <div class="footer-nav-buttons">
+              <a href="/" class="info-cog" title="Home Stage">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+                  <polyline points="9 22 9 12 15 12 15 22"></polyline>
+                </svg>
+              </a>
+              <a href="https://github.com/ogrebuddy" target="_blank" rel="noopener noreferrer" class="info-cog" title="GitHub Repository">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"></path>
+                </svg>
+              </a>
+              <a href="/projects" class="info-cog" title="Projects & Docs">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                  <polygon points="12 2 2 7 12 12 22 7 12 2"></polygon>
+                  <polyline points="2 12 12 17 22 12"></polyline>
+                  <polyline points="2 17 12 22 22 17"></polyline>
+                </svg>
+              </a>
+              <button type="button" class="info-cog" id="footer-theme-btn" title="Settings / Theme Toggle">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                  <circle cx="12" cy="12" r="3"></circle>
+                  <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+                </svg>
+              </button>
+            </div>
+          </div>
+        </div>
+      </footer>
+    </div>
+
+    <script>
+      const themeBtn = document.getElementById('theme-toggle-btn');
+      const footerThemeBtn = document.getElementById('footer-theme-btn');
+      const body = document.body;
+
+      if (localStorage.getItem('ogreTheme') === 'neon') {
+        body.classList.add('theme-neon');
+        if (themeBtn) themeBtn.textContent = '☀️ Day Mode';
+      }
+
+      function toggleTheme() {
+        body.classList.toggle('theme-neon');
+        const isNeon = body.classList.contains('theme-neon');
+        localStorage.setItem('ogreTheme', isNeon ? 'neon' : 'bodega');
+        if (themeBtn) {
+          themeBtn.textContent = isNeon ? '☀️ Day Mode' : '🌙 Neon Mode';
+        }
+      }
+
+      themeBtn?.addEventListener('click', toggleTheme);
+      footerThemeBtn?.addEventListener('click', toggleTheme);
+    </script>
+
+    <style>
+      .app-wrapper {
+        min-height: 100vh;
+        display: flex;
+        flex-direction: column;
+        width: 100%;
+      }
+
+      .header-branding {
+        display: flex;
+        align-items: center;
+        gap: 0.85rem;
+      }
+
+      .logo-link {
+        display: flex;
+        align-items: center;
+        gap: 0.85rem;
+      }
+
+      /* Slightly larger Ogre avatar logo */
+      .header-logo-img {
+        width: 44px;
+        height: 44px;
+        object-fit: contain;
+        transition: transform 0.2s ease;
+      }
+
+      .logo-link:hover .header-logo-img {
+        transform: scale(1.08) rotate(-4deg);
+      }
+
+      /* Official WEBLOGO.svg image replacement */
+      .header-weblogo-svg {
+        height: 38px;
+        width: auto;
+        max-width: 280px;
+        object-fit: contain;
+        display: block;
+      }
+
+      .main-container {
+        flex: 1;
+        max-width: 1080px;
+        width: 100%;
+        margin: 0 auto;
+        padding: 1.5rem 1.25rem 0;
+      }
+
+      @media (max-width: 600px) {
+        .main-container {
+          padding: 1rem 0.75rem 0;
+        }
+
+        .header-logo-img {
+          width: 36px;
+          height: 36px;
+        }
+
+        .header-weblogo-svg {
+          height: 28px;
+        }
+      }
+    </style>
+  </body>
+</html>
