@@ -1,0 +1,98 @@
+---
+import type { Milestone } from '../data/projects';
+
+type Props = Milestone;
+
+const { label, title, date, copy } = Astro.props;
+---
+
+<div class="timeline-item">
+  <div class="timeline-marker">
+    <span class="timeline-dot"></span>
+  </div>
+  <div class="bodega-card timeline-card">
+    <div class="timeline-meta">
+      <div class="timeline-meta-left">
+        <span class="stamp-pill time-stamp">{label}</span>
+        <h3 class="timeline-item-title">{title}</h3>
+      </div>
+      <span class="timeline-date">{date}</span>
+    </div>
+    <p class="timeline-item-copy">{copy}</p>
+  </div>
+</div>
+
+<style>
+  .timeline-item {
+    position: relative;
+  }
+
+  .timeline-marker {
+    position: absolute;
+    left: -1.5rem;
+    top: 18px;
+    transform: translateX(-50%);
+    z-index: 2;
+  }
+
+  .timeline-dot {
+    display: block;
+    width: 13px;
+    height: 13px;
+    border-radius: 50%;
+    background: var(--accent-color);
+    border: 2.5px solid var(--text-main);
+  }
+
+  body.theme-neon .timeline-dot {
+    background: var(--neon-pink);
+    border-color: var(--neon-cyan);
+    box-shadow: 0 0 8px var(--neon-pink);
+  }
+
+  .timeline-card {
+    padding: 1.15rem 1.4rem;
+  }
+
+  .timeline-meta {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    margin-bottom: 0.5rem;
+    flex-wrap: wrap;
+  }
+
+  .timeline-meta-left {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+  }
+
+  .timeline-item-title {
+    font-family: var(--font-display);
+    font-size: 1.25rem;
+    margin: 0;
+  }
+
+  .timeline-date {
+    font-family: var(--font-mono);
+    font-size: 0.82rem;
+    font-weight: 700;
+    color: var(--text-muted);
+    letter-spacing: 0.04em;
+  }
+
+  body.theme-neon .timeline-date {
+    color: var(--neon-cyan);
+  }
+
+  .timeline-item-copy {
+    font-family: var(--font-mono);
+    font-size: 0.9rem;
+    color: var(--text-muted);
+    margin: 0;
+    line-height: 1.45;
+  }
+</style>

@@ -1,0 +1,256 @@
+---
+// Opens for any image carrying data-gallery, a JSON array of { src, caption }.
+---
+
+<div id="image-zoom-modal" class="zoom-modal">
+  <div class="zoom-modal-content">
+    <div class="zoom-modal-header">
+      <span id="zoom-modal-caption" class="stamp-pill modal-caption-stamp"></span>
+      <button id="zoom-close-btn" class="stamp-pill zoom-close-btn">&times; Close</button>
+    </div>
+
+    <div class="zoom-image-viewport">
+      <button id="gallery-prev" class="gallery-nav-btn prev-btn" title="Previous image">&lsaquo;</button>
+      <img id="zoom-modal-img" src="" alt="" />
+      <button id="gallery-next" class="gallery-nav-btn next-btn" title="Next image">&rsaquo;</button>
+    </div>
+
+    <div id="gallery-dots" class="gallery-dots"></div>
+  </div>
+</div>
+
+<script>
+  interface GalleryImage {
+    src: string;
+    caption: string;
+  }
+
+  const modal = document.getElementById('image-zoom-modal');
+  const modalImg = document.getElementById('zoom-modal-img') as HTMLImageElement | null;
+  const caption = document.getElementById('zoom-modal-caption');
+  const closeBtn = document.getElementById('zoom-close-btn');
+  const prevBtn = document.getElementById('gallery-prev');
+  const nextBtn = document.getElementById('gallery-next');
+  const dots = document.getElementById('gallery-dots');
+
+  let images: GalleryImage[] = [];
+  let index = 0;
+
+  function render() {
+    if (!modalImg || images.length === 0) return;
+
+    const current = images[index];
+    modalImg.src = current.src;
+    modalImg.alt = current.caption;
+    if (caption) caption.textContent = current.caption;
+
+    const multiple = images.length > 1;
+    if (prevBtn) prevBtn.hidden = !multiple;
+    if (nextBtn) nextBtn.hidden = !multiple;
+
+    if (!dots) return;
+    dots.replaceChildren();
+    if (!multiple) return;
+
+    images.forEach((image, i) => {
+      const dot = document.createElement('button');
+      dot.className = i === index ? 'gallery-dot active' : 'gallery-dot';
+      dot.title = image.caption;
+      dot.addEventListener('click', (event) => {
+        event.stopPropagation();
+        index = i;
+        render();
+      });
+      dots.appendChild(dot);
+    });
+  }
+
+  function step(offset: number) {
+    if (images.length <= 1) return;
+    index = (index + offset + images.length) % images.length;
+    render();
+  }
+
+  function close() {
+    modal?.classList.remove('open');
+  }
+
+  document.querySelectorAll<HTMLImageElement>('.zoomable-screenshot').forEach((image) => {
+    image.addEventListener('click', () => {
+      try {
+        images = JSON.parse(image.dataset.gallery ?? '[]');
+      } catch {
+        images = [{ src: image.src, caption: image.alt }];
+      }
+      if (images.length === 0) return;
+
+      index = 0;
+      render();
+      modal?.classList.add('open');
+    });
+  });
+
+  prevBtn?.addEventListener('click', (event) => {
+    event.stopPropagation();
+    step(-1);
+  });
+
+  nextBtn?.addEventListener('click', (event) => {
+    event.stopPropagation();
+    step(1);
+  });
+
+  closeBtn?.addEventListener('click', close);
+
+  modal?.addEventListener('click', (event) => {
+    if (event.target === modal) close();
+  });
+
+  document.addEventListener('keydown', (event) => {
+    if (!modal?.classList.contains('open')) return;
+    if (event.key === 'Escape') close();
+    if (event.key === 'ArrowLeft') step(-1);
+    if (event.key === 'ArrowRight') step(1);
+  });
+</script>
+
+<style>
+  .zoom-modal {
+    position: fixed;
+    inset: 0;
+    background: rgba(10, 5, 20, 0.88);
+    backdrop-filter: blur(6px);
+    z-index: 1000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1.5rem;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.25s ease;
+  }
+
+  .zoom-modal.open {
+    opacity: 1;
+    pointer-events: auto;
+  }
+
+  .zoom-modal-content {
+    position: relative;
+    max-width: 1000px;
+    max-height: 90vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.75rem;
+    width: 100%;
+  }
+
+  .zoom-modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+    max-width: 800px;
+  }
+
+  .modal-caption-stamp {
+    background: var(--purple-paper-2);
+    color: var(--ink);
+    border-color: var(--ink);
+  }
+
+  .zoom-close-btn {
+    cursor: pointer;
+    background: #ff4fa3;
+    color: #ffffff;
+    border-color: #ffffff;
+    font-size: 0.85rem;
+  }
+
+  .zoom-image-viewport {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    max-width: 100%;
+  }
+
+  #zoom-modal-img {
+    max-width: 100%;
+    max-height: 75vh;
+    object-fit: contain;
+    border: 3px solid var(--text-main);
+    box-shadow: 0 0 30px rgba(0, 0, 0, 0.8);
+  }
+
+  .gallery-nav-btn {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    background: #111111;
+    border: 2px solid #ffffff;
+    color: #ffffff;
+    font-size: 1.8rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    box-shadow: 0 0 12px rgba(0, 0, 0, 0.6);
+    transition: all 0.15s ease;
+    z-index: 10;
+  }
+
+  .gallery-nav-btn[hidden] {
+    display: none;
+  }
+
+  .gallery-nav-btn:hover {
+    background: #ff4fa3;
+    transform: translateY(-50%) scale(1.1);
+  }
+
+  .prev-btn {
+    left: -54px;
+  }
+
+  .next-btn {
+    right: -54px;
+  }
+
+  @media (max-width: 640px) {
+    .prev-btn {
+      left: 8px;
+    }
+
+    .next-btn {
+      right: 8px;
+    }
+  }
+
+  .gallery-dots {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+  }
+
+  .gallery-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.4);
+    border: 1.5px solid #ffffff;
+    cursor: pointer;
+    padding: 0;
+    transition: all 0.2s ease;
+  }
+
+  .gallery-dot.active {
+    background: #ff4fa3;
+    transform: scale(1.3);
+    box-shadow: 0 0 8px #ff4fa3;
+  }
+</style>

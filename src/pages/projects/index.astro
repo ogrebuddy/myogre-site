@@ -1,0 +1,133 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import CaseStudy from '../../components/CaseStudy.astro';
+import Milestone from '../../components/Milestone.astro';
+import Lightbox from '../../components/Lightbox.astro';
+import { caseStudies, milestones } from '../../data/projects';
+---
+
+<BaseLayout title="The MyOgre Project — Evolution & Case Studies">
+  <div class="projects-page-flow">
+    <header class="project-hero-header">
+      <span class="stamp-pill hero-tag">Public Case Studies</span>
+      <h1 class="project-page-title">THE MYOGRE PROJECT</h1>
+      <p class="human-intro">
+        What began as a small browser tool has grown into a connected collection of apps,
+        services, experiments, and animated companions—built to solve real problems and explore
+        what personal software can become.
+      </p>
+    </header>
+
+    <section class="case-studies-grid">
+      {caseStudies.map((study) => <CaseStudy {...study} />)}
+    </section>
+
+    <section class="timeline-section">
+      <div class="timeline-header-box">
+        <h2 class="timeline-main-title">EVOLUTION &amp; MILESTONES</h2>
+        <p class="timeline-subtitle">
+          Three months of progress from a browser snippet to an ecosystem
+        </p>
+      </div>
+
+      <div class="timeline-list">
+        {milestones.map((milestone) => <Milestone {...milestone} />)}
+      </div>
+    </section>
+
+    <Lightbox />
+  </div>
+</BaseLayout>
+
+<style>
+  .projects-page-flow {
+    display: flex;
+    flex-direction: column;
+    gap: 3rem;
+    padding-bottom: 2rem;
+  }
+
+  .project-hero-header {
+    text-align: left;
+    max-width: 840px;
+  }
+
+  .hero-tag {
+    margin-bottom: 0.75rem;
+  }
+
+  .project-page-title {
+    font-family: var(--font-display);
+    font-size: clamp(2rem, 5vw, 3.2rem);
+    letter-spacing: 0.04em;
+    margin: 0.4rem 0 1rem;
+    color: var(--text-main);
+  }
+
+  .human-intro {
+    font-family: var(--font-mono);
+    font-size: clamp(0.95rem, 2.2vw, 1.15rem);
+    line-height: 1.6;
+    color: var(--text-main);
+    opacity: 0.92;
+    margin: 0;
+  }
+
+  .case-studies-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 2rem;
+  }
+
+  .timeline-section {
+    display: flex;
+    flex-direction: column;
+    gap: 1.75rem;
+  }
+
+  .timeline-header-box {
+    border-bottom: 2px solid var(--text-main);
+    padding-bottom: 0.75rem;
+  }
+
+  body.theme-neon .timeline-header-box {
+    border-bottom-color: var(--neon-cyan);
+  }
+
+  .timeline-main-title {
+    font-family: var(--font-display);
+    font-size: 1.85rem;
+    margin: 0 0 0.25rem;
+  }
+
+  .timeline-subtitle {
+    font-family: var(--font-mono);
+    font-size: 0.9rem;
+    color: var(--text-muted);
+    margin: 0;
+  }
+
+  .timeline-list {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+    padding-left: 1.5rem;
+  }
+
+  .timeline-list::before {
+    content: '';
+    position: absolute;
+    top: 15px;
+    bottom: 15px;
+    left: 7px;
+    width: 3px;
+    background: var(--text-main);
+    opacity: 0.35;
+  }
+
+  body.theme-neon .timeline-list::before {
+    background: var(--neon-cyan);
+    opacity: 0.6;
+  }
+</style>

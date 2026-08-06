@@ -1,0 +1,230 @@
+---
+import type { CaseStudy } from '../data/projects';
+
+type Props = CaseStudy;
+
+const { title, subtitle, copy, icon, badge, tags, gallery } = Astro.props;
+
+const cover = gallery[0];
+const zoomLabel = gallery.length > 1 ? `1/${gallery.length} Gallery` : 'Zoom';
+---
+
+<article class="bodega-card case-card">
+  <div class="case-card-body">
+    <div class="case-content-col">
+      <div class="case-card-header">
+        <div class="case-card-branding">
+          <img
+            src={icon.src}
+            alt={icon.alt}
+            class={icon.variant === 'logo' ? 'case-card-logo-svg' : 'case-card-icon'}
+          />
+          <div>
+            <h2 class="case-card-title">{title}</h2>
+            <span class="case-subtitle">{subtitle}</span>
+          </div>
+        </div>
+
+        {badge.href ? (
+          <a
+            href={badge.href}
+            target="_blank"
+            rel="noopener noreferrer"
+            class="stamp-pill external-link-pill"
+          >
+            {badge.label}
+          </a>
+        ) : (
+          <span class="stamp-pill">{badge.label}</span>
+        )}
+      </div>
+
+      <p class="case-card-copy">{copy}</p>
+
+      <div class="case-labels-row">
+        {tags.map((tag) => <span class="tech-tag">{tag}</span>)}
+      </div>
+    </div>
+
+    <div class="case-portrait-col">
+      <div class="portrait-screenshot-frame">
+        <img
+          src={cover.src}
+          alt={cover.caption}
+          class="portrait-screenshot-img zoomable-screenshot"
+          data-gallery={JSON.stringify(gallery)}
+          title={gallery.length > 1 ? 'View screenshot gallery' : 'Zoom screenshot'}
+        />
+        <span class="zoom-badge">🔍 {zoomLabel}</span>
+      </div>
+    </div>
+  </div>
+</article>
+
+<style>
+  .case-card {
+    display: flex;
+    flex-direction: column;
+    padding: 1.5rem;
+  }
+
+  .case-card-body {
+    display: grid;
+    grid-template-columns: 1fr 220px;
+    gap: 1.75rem;
+    align-items: center;
+  }
+
+  .case-content-col {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  .case-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    flex-wrap: wrap;
+    gap: 1rem;
+  }
+
+  .case-card-branding {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+  }
+
+  .case-card-icon {
+    width: 48px;
+    height: 48px;
+    object-fit: contain;
+  }
+
+  .case-card-logo-svg {
+    height: 32px;
+    width: auto;
+    object-fit: contain;
+  }
+
+  .case-card-title {
+    font-family: var(--font-display);
+    font-size: 1.65rem;
+    margin: 0;
+    line-height: 1.1;
+  }
+
+  .case-subtitle {
+    font-family: var(--font-mono);
+    font-size: 0.85rem;
+    color: var(--text-muted);
+    font-weight: 600;
+  }
+
+  .external-link-pill {
+    cursor: pointer;
+    text-decoration: none;
+    transition: transform 0.15s ease;
+  }
+
+  .external-link-pill:hover {
+    transform: scale(1.05);
+    background: var(--accent-color);
+    color: #ffffff;
+  }
+
+  .case-card-copy {
+    font-family: var(--font-mono);
+    font-size: 1rem;
+    line-height: 1.55;
+    color: var(--text-main);
+    margin: 0;
+  }
+
+  .case-labels-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.6rem;
+    margin-top: 0.25rem;
+  }
+
+  .tech-tag {
+    font-family: var(--font-mono);
+    font-size: 0.78rem;
+    font-weight: 700;
+    padding: 4px 10px;
+    background: var(--bg-primary);
+    border: 1.5px solid var(--text-main);
+    color: var(--text-main);
+    border-radius: 4px;
+  }
+
+  body.theme-neon .tech-tag {
+    background: #140b24;
+    border-color: var(--neon-pink);
+    color: var(--neon-pink);
+  }
+
+  .case-portrait-col {
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+  }
+
+  .portrait-screenshot-frame {
+    position: relative;
+    width: 100%;
+    height: 245px;
+    border: 2px solid var(--text-main);
+    background: #0b0416;
+    box-shadow: 4px 4px 0 var(--text-main);
+    overflow: hidden;
+    border-radius: 4px;
+  }
+
+  body.theme-neon .portrait-screenshot-frame {
+    border-color: var(--neon-cyan);
+    box-shadow: 0 0 15px rgba(92, 242, 255, 0.35);
+  }
+
+  .portrait-screenshot-img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: top center;
+    display: block;
+    cursor: zoom-in;
+    transition: transform 0.3s ease;
+  }
+
+  .portrait-screenshot-img:hover {
+    transform: scale(1.06);
+  }
+
+  .zoom-badge {
+    position: absolute;
+    bottom: 8px;
+    right: 8px;
+    background: rgba(17, 17, 17, 0.88);
+    color: #ffffff;
+    font-family: var(--font-mono);
+    font-size: 0.72rem;
+    padding: 3px 8px;
+    border-radius: 4px;
+    pointer-events: none;
+  }
+
+  @media (max-width: 720px) {
+    .case-card-body {
+      grid-template-columns: 1fr;
+    }
+
+    .case-portrait-col {
+      justify-content: center;
+    }
+
+    .portrait-screenshot-frame {
+      height: 200px;
+    }
+  }
+</style>
