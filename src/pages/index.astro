@@ -1,0 +1,87 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import OgreHero from '../components/OgreHero.astro';
+import LinkCard from '../components/LinkCard.astro';
+import FollowForm from '../components/FollowForm.astro';
+---
+
+<BaseLayout title="MyOgre — Robin's Personal Assistant & Ogre Suite">
+  <div class="homepage-flow">
+    <OgreHero />
+
+    <section class="cards-section">
+      <div class="grid-two-cards">
+        <LinkCard 
+          title="Connect on Github" 
+          description="Follow the code, experiments, and technical evolution on GitHub." 
+          href="https://github.com/ogrebuddy" 
+          badge="GitHub" 
+          icon="/assets/ogre-scan.png" 
+          external={true}
+        />
+
+        <LinkCard 
+          title="Explore the project." 
+          description="Explore the projects, systems, and ideas growing behind the character." 
+          href="/projects" 
+          badge="MyOgre Suite" 
+          icon="/assets/buddy-purple.png" 
+        />
+      </div>
+
+      <div class="featured-card-wrapper">
+        <LinkCard 
+          title="Ogredex now in beta testing!" 
+          description="A responsive Pokémon GO collection tracker for shinies, costumes, personal checklists, and shareable trading profiles." 
+          href="https://dex.myog.re" 
+          badge="Beta" 
+          icon="/assets/ogredex-logo.png" 
+          iconSize="large" 
+          external={true}
+        />
+      </div>
+    </section>
+
+    <section class="subscribe-section">
+      <FollowForm />
+    </section>
+  </div>
+</BaseLayout>
+
+<style>
+  .homepage-flow {
+    display: flex;
+    flex-direction: column;
+    gap: 2.25rem;
+    width: 100%;
+  }
+
+  .cards-section {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+  }
+
+  .grid-two-cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+    gap: 1.5rem;
+    width: 100%;
+  }
+
+  .featured-card-wrapper {
+    width: 100%;
+  }
+
+  .subscribe-section {
+    width: 100%;
+    margin-top: 0.5rem;
+  }
+
+  @media (max-width: 680px) {
+    .grid-two-cards {
+      grid-template-columns: 1fr;
+    }
+  }
+</style>

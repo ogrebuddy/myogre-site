@@ -1,0 +1,147 @@
+---
+---
+
+<div class="follow-section bodega-card">
+  <div class="follow-header">
+    <h2 class="follow-title">Stay Updated</h2>
+    <p class="follow-desc">Subscribe to receive updates on MyOgre development, experiments, and releases.</p>
+  </div>
+
+  <form id="subscribe-form" class="follow-form">
+    <input
+      type="email"
+      name="email"
+      placeholder="your@email.com"
+      required
+      class="form-input"
+    />
+    <input
+      type="text"
+      name="website"
+      class="honeypot"
+      tabindex="-1"
+      autocomplete="off"
+      aria-hidden="true"
+    />
+    <button type="submit" class="stamp-pill submit-btn">Subscribe</button>
+  </form>
+
+  <div id="form-feedback" class="form-feedback"></div>
+</div>
+
+<script>
+  const form = document.getElementById('subscribe-form') as HTMLFormElement;
+  const feedback = document.getElementById('form-feedback');
+
+  form?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    if (!feedback) return;
+
+    feedback.textContent = 'Submitting...';
+    feedback.className = 'form-feedback info';
+
+    try {
+      const formData = new FormData(form);
+      const res = await fetch('/api/subscribe', {
+        method: 'POST',
+        body: formData
+      });
+
+      const data = await res.json();
+      if (res.ok && data.success) {
+        feedback.textContent = '✔ Subscribed! Thank you.';
+        feedback.className = 'form-feedback success';
+        form.reset();
+      } else {
+        feedback.textContent = data.error || 'Submission failed. Please try again.';
+        feedback.className = 'form-feedback error';
+      }
+    } catch {
+      feedback.textContent = 'Could not reach the server. Please try again.';
+      feedback.className = 'form-feedback error';
+    }
+  });
+</script>
+
+<style>
+  .follow-section {
+    max-width: 540px;
+    margin: 2.5rem auto 1.5rem;
+    text-align: center;
+  }
+
+  .follow-title {
+    font-size: 1.8rem;
+    margin-bottom: 0.25rem;
+  }
+
+  .follow-desc {
+    font-size: 0.88rem;
+    color: var(--text-muted);
+    margin-bottom: 1.25rem;
+  }
+
+  .follow-form {
+    display: flex;
+    gap: 0.75rem;
+    justify-content: center;
+  }
+
+  @media (max-width: 500px) {
+    .follow-form {
+      flex-direction: column;
+    }
+  }
+
+  /* Bot bait: off-screen rather than display:none, which some bots skip. */
+  .honeypot {
+    position: absolute;
+    left: -9999px;
+    width: 1px;
+    height: 1px;
+    opacity: 0;
+  }
+
+  .form-input {
+    flex: 1;
+    padding: 0.6rem 1rem;
+    font-family: var(--font-mono);
+    font-size: 0.9rem;
+    background: var(--bg-primary);
+    color: var(--text-main);
+    border: 2px solid var(--text-main);
+    box-shadow: 3px 3px 0 var(--text-main);
+  }
+
+  .form-input:focus {
+    outline: none;
+    border-color: var(--accent-color);
+  }
+
+  .submit-btn {
+    cursor: pointer;
+    background: var(--accent-color);
+    color: #ffffff;
+    border: 2px solid var(--text-main);
+    padding: 0.6rem 1.2rem;
+    font-size: 0.85rem;
+  }
+
+  .submit-btn:hover {
+    transform: rotate(0deg) scale(1.03);
+  }
+
+  .form-feedback {
+    font-size: 0.82rem;
+    font-weight: 700;
+    margin-top: 0.75rem;
+  }
+
+  .form-feedback.success {
+    color: var(--accent-color);
+  }
+
+  .form-feedback.error {
+    color: var(--SF-red);
+  }
+</style>
