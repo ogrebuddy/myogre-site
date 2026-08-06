@@ -39,7 +39,7 @@ export const caseStudies: CaseStudy[] = [
     copy: 'A responsive Pokémon GO collection tracker for shinies, costumes, personal checklists, and shareable trading profiles.',
     icon: { src: '/assets/ogredex-logo.png', alt: 'Ogredex' },
     badge: { label: 'dex.myog.re →', href: 'https://dex.myog.re' },
-    tags: ['React', 'FastAPI', 'SQLite', 'Public profiles'],
+    tags: ['Vanilla JS', 'FastAPI', 'SQLite', 'Public profiles'],
     gallery: [
       { src: '/assets/screenshot-ogredex.png', caption: 'Ogredex Shiny Collection Tracker' },
     ],
