@@ -1,0 +1,419 @@
+---
+import SpeechBubble from './SpeechBubble.astro';
+---
+
+<div class="hero-section">
+  <div class="mascot-stage">
+    <div class="hero-horizontal-row">
+      <div class="header-mascot-container">
+        <div class="main-mascot-flip" id="hero-mascot-flip">
+          <div class="task-ogre active" id="task-ogre">
+            <div id="task-ogre-svg" class="ogre-layer ogre-svg-wrap"></div>
+          </div>
+        </div>
+      </div>
+
+      <SpeechBubble />
+    </div>
+
+    <div class="control-bar">
+      <button type="button" id="replay-sound-btn" class="stamp-pill replay-btn">
+        🔊 Replay with sound
+      </button>
+      <audio id="hero-voice-audio" src="/ogre/ogre_hi.mp3" preload="auto"></audio>
+    </div>
+  </div>
+</div>
+
+<script src="/assets/ogre-animator.js" is:inline></script>
+
+<script>
+  declare global {
+    interface Window {
+      OgreAnimator: any;
+      _ogreAnimatorInstance: any;
+      OgreEyeSystem: any;
+    }
+  }
+
+  // Authentic Ogre Eye Tracking System from Ogrebite / Ogrebuddy
+  const OgreEyeSystem = {
+    mouseX: typeof window !== 'undefined' ? window.innerWidth / 2 : 0,
+    mouseY: typeof window !== 'undefined' ? window.innerHeight / 2 : 0,
+    HOME: {
+      L: { cx: 127.77, cy: 252.38 },
+      R: { cx: 351.45, cy: 231.75 },
+    },
+    MAX_TRAVEL: 6,
+    _raf: null as number | null,
+
+    // Exclude pupil-flinging faces to keep eyes strictly inside the face
+    EXTREME_FACES: new Set([
+      'face-roll-eyes','face-dizzy','face-wild','face-hypno',
+      'face-surprised','face-scared','face-big-eyes','face-cry','face-sleepy',
+    ]),
+
+    init() {
+      window.addEventListener('mousemove', e => { 
+        this.mouseX = e.clientX; 
+        this.mouseY = e.clientY; 
+      });
+      this.loop();
+    },
+
+    _trackingBlocked() {
+      const svg = document.querySelector('#task-ogre-svg #SVG_OGRE');
+      if (!svg) return true;
+      for (const c of Array.from(svg.classList)) {
+        if (this.EXTREME_FACES.has(c)) return true;
+      }
+      return false;
+    },
+
+    _pupil(side: 'L' | 'R') {
+      return document.querySelector(`#task-ogre-svg #${side}-pupil > g`)
+          || document.querySelector(`#task-ogre-svg #${side}-pupil`);
+    },
+
+    _setPupil(side: 'L' | 'R', dx: number, dy: number) {
+      const el = this._pupil(side);
+      if (!el) return;
+      el.setAttribute('transform', `translate(${dx.toFixed(2)} ${dy.toFixed(2)})`);
+    },
+
+    _resetPupils() {
+      this._setPupil('L', 0, 0);
+      this._setPupil('R', 0, 0);
+    },
+
+    _travelFor(home: { cx: number, cy: number }) {
+      const wrap = document.getElementById('task-ogre-svg');
+      const svg  = wrap && wrap.querySelector('svg');
+      if (!svg) return { x: 0, y: 0 };
+      const rect = svg.getBoundingClientRect();
+      if (!rect.width || !rect.height) return { x: 0, y: 0 };
+      const vbW = 469.83, vbH = 474.51;
+      const sx = rect.left + (home.cx / vbW) * rect.width;
+      const sy = rect.top  + (home.cy / vbH) * rect.height;
+      const dx = this.mouseX - sx, dy = this.mouseY - sy;
+      const dist = Math.hypot(dx, dy) || 1;
+      const mag = Math.min(dist / 140, 1) * this.MAX_TRAVEL;
+      return { x: (dx / dist) * mag, y: (dy / dist) * mag };
+    },
+
+    loop() {
+      if (!this._trackingBlocked()) {
+        const l = this._travelFor(this.HOME.L);
+        const r = this._travelFor(this.HOME.R);
+        this._setPupil('L', l.x, l.y);
+        this._setPupil('R', r.x, r.y);
+      } else {
+        this._resetPupils();
+      }
+      this._raf = requestAnimationFrame(() => this.loop());
+    }
+  };
+
+  // Color Palette Presets from Ogrebrain Animation Lab
+  const OGRE_PALETTES = [
+    { name: 'periwinkle', face: '#92a9ff', mane: '#9d1bb2', horn: '#e7f536', brow: '#38e268', eye: '#ffffff', pupil: '#ff0077', outline: '#111111' },
+    { name: 'purple',     face: '#ccc6f7', mane: '#9527f8', horn: '#ecff8b', brow: '#f97eff', eye: '#ffffff', pupil: '#434151', outline: '#111111' },
+    { name: 'original',   face: '#00a99d', mane: '#d31818', horn: '#f0ffbb', brow: '#77ffa1', eye: '#ffffff', pupil: '#ee2100', outline: '#111111' },
+    { name: 'sunset',     face: '#f97316', mane: '#eab308', horn: '#fef3c7', brow: '#fb923c', eye: '#ffffff', pupil: '#7c2d12', outline: '#111111' },
+    { name: 'ocean',      face: '#0369a1', mane: '#06b6d4', horn: '#e0f2fe', brow: '#38bdf8', eye: '#ffffff', pupil: '#0c4a6e', outline: '#111111' },
+    { name: 'neon',       face: '#ec4899', mane: '#22c55e', horn: '#fef08a', brow: '#86efac', eye: '#ffffff', pupil: '#1a0a2e', outline: '#111111' },
+    { name: 'candy',      face: '#fb7185', mane: '#a78bfa', horn: '#fbcfe8', brow: '#fde68a', eye: '#ffffff', pupil: '#4c1d95', outline: '#111111' },
+    { name: 'toxic',      face: '#4d7c0f', mane: '#a3e635', horn: '#ecfccb', brow: '#d9f99d', eye: '#ffffff', pupil: '#1a2e05', outline: '#111111' },
+    { name: 'sf',         face: '#d81829', mane: '#ceeab5', horn: '#ffef21', brow: '#ff6640', eye: '#ffffff', pupil: '#38060a', outline: '#111111' }
+  ];
+
+  let currentPaletteIndex = 0;
+  function cycleOgrePalette() {
+    currentPaletteIndex = (currentPaletteIndex + 1) % OGRE_PALETTES.length;
+    const p = OGRE_PALETTES[currentPaletteIndex];
+    const root = document.documentElement;
+    root.style.setProperty('--ogre-face', p.face);
+    root.style.setProperty('--ogre-mane', p.mane);
+    root.style.setProperty('--ogre-horn', p.horn);
+    root.style.setProperty('--ogre-brow', p.brow);
+    root.style.setProperty('--ogre-eye', p.eye);
+    root.style.setProperty('--ogre-pupil', p.pupil);
+    root.style.setProperty('--ogre-outline', p.outline);
+  }
+
+  document.addEventListener('DOMContentLoaded', async () => {
+    const mascotRoot = document.getElementById('task-ogre-svg');
+    const bubble = document.getElementById('speech-bubble-container');
+    const replayBtn = document.getElementById('replay-sound-btn');
+    const voiceAudio = document.getElementById('hero-voice-audio') as HTMLAudioElement;
+
+    let animator: any = null;
+
+    try {
+      // 1. Fetch & inject full-ogre.svg vector rig
+      if (mascotRoot) {
+        const svgRes = await fetch('/assets/full-ogre.svg');
+        if (svgRes.ok) {
+          mascotRoot.innerHTML = await svgRes.text();
+        }
+      }
+
+      // 2. Locate SVG element (#SVG_OGRE) required by OgreAnimator
+      const svgElement = document.querySelector('#task-ogre-svg #SVG_OGRE');
+
+      // 3. Instantiate OgreAnimator with compiled spec
+      if (window.OgreAnimator && svgElement) {
+        const compiledSpec = await window.OgreAnimator.load('/assets/ogre-anim-spec.json');
+        animator = new window.OgreAnimator(svgElement, compiledSpec);
+        window._ogreAnimatorInstance = animator;
+
+        // Default body idle breath animation from Animation Lab
+        animator.play('body-breathe', { priority: 'body', group: 'body' }).catch(() => {});
+      }
+
+      // 4. Initialize Ogre Cursor Eye Tracking
+      OgreEyeSystem.init();
+      window.OgreEyeSystem = OgreEyeSystem;
+    } catch (err) {
+      console.warn('Ogre mascot initialization error:', err);
+    }
+
+    // Animation Lab Face Clips catalog (calm & expressive, eyes stay inside face)
+    const labFaceClips = [
+      'face-thinking',
+      'face-idle-grin',
+      'face-smug',
+      'face-wink',
+      'face-bored',
+      'face-look',
+      'face-side-eye',
+      'face-confused',
+      'face-eyelash-flutter',
+      'face-daydream',
+      'face-mischief',
+      'face-unimpressed',
+      'face-excited',
+      'face-intense'
+    ];
+
+    // Gentle micro-motion body clips (spins removed from frequent pool)
+    const gentleBodyClips = [
+      'body-breathe',
+      'body-task-pulse',
+      'body-timer-drift',
+      'body-armed-wobble'
+    ];
+
+    function playLabAnimations() {
+      if (!animator) return;
+      
+      // Random face animation
+      const facePick = labFaceClips[Math.floor(Math.random() * labFaceClips.length)];
+      try {
+        animator.play(facePick, { priority: 'face', group: 'face' });
+      } catch (e) {}
+
+      // Spin is rare: 1 in 8 chance (~12.5%) during periodic shifts
+      if (Math.random() < 0.125) {
+        try { animator.play('body-spin', { priority: 'body', group: 'body' }); } catch (e) {}
+      } else if (Math.random() > 0.6) {
+        const bodyPick = gentleBodyClips[Math.floor(Math.random() * gentleBodyClips.length)];
+        try { animator.play(bodyPick, { priority: 'body', group: 'body' }); } catch (e) {}
+      }
+    }
+
+    // Viseme Lip-Sync Mouth Talking Sequence
+    let talkTimer: any = null;
+    function triggerVisemeTalkingSequence(durationMs = 2800) {
+      if (talkTimer) clearInterval(talkTimer);
+      const visemes = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'];
+      let step = 0;
+
+      talkTimer = setInterval(() => {
+        const letter = visemes[step % visemes.length];
+        if (animator) {
+          try { animator.setViseme(letter); } catch(e) {}
+        }
+        step++;
+      }, 130);
+
+      setTimeout(() => {
+        if (talkTimer) clearInterval(talkTimer);
+        if (animator) {
+          try { animator.setViseme(null); } catch(e) {}
+        }
+      }, durationMs);
+    }
+
+    // Sync mouth lip-sync when audio plays
+    if (voiceAudio) {
+      voiceAudio.addEventListener('play', () => {
+        const duration = (voiceAudio.duration && isFinite(voiceAudio.duration)) ? voiceAudio.duration * 1000 : 3000;
+        triggerVisemeTalkingSequence(duration);
+      });
+      voiceAudio.addEventListener('ended', () => {
+        if (talkTimer) clearInterval(talkTimer);
+        if (animator) {
+          try { animator.setViseme(null); } catch(e) {}
+        }
+      });
+    }
+
+    function runAnimationSequence(playSound = false) {
+      if (!bubble) return;
+
+      // Reset speech bubble visibility
+      bubble.classList.remove('visible');
+
+      // Play facial expression clip + cycle color palette
+      playLabAnimations();
+
+      // Play audio ONLY if user clicked replay
+      if (playSound && voiceAudio) {
+        voiceAudio.currentTime = 0;
+        voiceAudio.play().catch(e => console.log('Audio playback prevented:', e));
+      } else {
+        triggerVisemeTalkingSequence(2400);
+      }
+
+      // Speech bubble enters near end of sequence
+      setTimeout(() => {
+        bubble.classList.add('visible');
+      }, 700);
+    }
+
+    // Run silent animation sequence on initial load
+    runAnimationSequence(false);
+
+    // Periodically pepper in Animation Lab expressions & body motions (every 5 seconds)
+    setInterval(() => {
+      playLabAnimations();
+    }, 5000);
+
+    // Periodically cycle Ogre's face colors across Animation Lab palettes (every 12 seconds)
+    setInterval(() => {
+      cycleOgrePalette();
+    }, 12000);
+
+    // Mascot click handler: trigger spin & palette shift on explicit click!
+    const mascotFlip = document.getElementById('hero-mascot-flip');
+    mascotFlip?.addEventListener('click', () => {
+      cycleOgrePalette();
+      if (animator) {
+        animator.play('body-spin', { priority: 'body', group: 'body' }).catch(() => {});
+        animator.play('face-excited', { priority: 'face', group: 'face' }).catch(() => {});
+      }
+    });
+
+    // Replay button listener (explicit user interaction)
+    replayBtn?.addEventListener('click', () => {
+      cycleOgrePalette();
+      runAnimationSequence(true);
+    });
+  });
+</script>
+
+<style>
+  .hero-section {
+    padding: 1.5rem 0.5rem 0.5rem;
+  }
+
+  .mascot-stage {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .hero-horizontal-row {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 1.5rem;
+    width: 100%;
+    max-width: 820px;
+    margin-bottom: 1.25rem;
+  }
+
+  @media (max-width: 680px) {
+    .hero-horizontal-row {
+      flex-direction: column;
+    }
+  }
+
+  /* Circular Mascot Badge Frame matching reference image */
+  .header-mascot-container {
+    width: 170px;
+    height: 170px;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .main-mascot-flip {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #ffffff;
+    border: 4px solid var(--text-main);
+    border-radius: 50%;
+    box-shadow: 5px 5px 0 var(--text-main);
+    transition: transform 0.3s ease, border-color 0.4s ease;
+    overflow: hidden;
+    padding: 8px;
+    position: relative;
+    cursor: pointer;
+  }
+
+  .main-mascot-flip:hover {
+    transform: scale(1.04);
+  }
+
+  body.theme-neon .main-mascot-flip {
+    background: #190f2a;
+    border-color: var(--neon-cyan);
+    box-shadow: 0 0 24px rgba(92, 242, 255, 0.45);
+  }
+
+  .task-ogre {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+  }
+
+  .ogre-svg-wrap {
+    width: 100%;
+    height: 100%;
+  }
+
+  .ogre-svg-wrap :global(svg) {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    transition: fill 0.5s ease;
+  }
+
+  .control-bar {
+    margin-top: 0.5rem;
+  }
+
+  .replay-btn {
+    cursor: pointer;
+    background: var(--bg-card);
+    border: 2px solid var(--text-main);
+    padding: 0.5rem 1.25rem;
+    font-size: 0.88rem;
+    transition: transform 0.15s ease;
+  }
+
+  .replay-btn:hover {
+    transform: rotate(0deg) scale(1.04);
+    background: var(--accent-color);
+    color: #ffffff;
+  }
+</style>

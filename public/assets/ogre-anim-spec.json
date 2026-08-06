@@ -1,0 +1,681 @@
+{
+  "meta": {
+    "schemaVersion": 1,
+    "specVersion": "0.3.0",
+    "generator": "batch1-transcription",
+    "notes": "v0 = faithful transcription of CSS-era animations; fancy pass comes in v1. sequences is intentionally empty in v0. Transform composition order per keyframe is translate -> rotate -> scale. Face clips transcribed from ogrebuddy/popup.css (canonical); ogrebite/src/styles.css holds an #id-selector copy with matching values. M11 adds data-only face-talk and face-talk-end clips for audio-keyed visual speech. Chrome-only pill/status/radar/shimmer/watermark animations stay in CSS and are catalogued in docs/ogre-animation-map.md, NOT here. 0.2.0: added visemes section + mouth/fang viseme rig slots (art pending); removed batch-3a placeholder mouths from full-ogre.svg. 0.3.0: hand-drawn viseme mouth art (A-H, X) inlined into full-ogre.svg slots; mouth fills themed via .m-teeth/.m-dark/.m-tongue in the injected SVG_STYLE sheet. Phase 1: data-mouth state attr + conservative expression→viseme map (surprised=D, dizzy=F, sleepy/bored=X) via clip.mouthViseme."
+  },
+  "rig": {
+    "root": { "match": [], "note": "app body element (#task-ogre / lab #ogreContainer); receives body clips" },
+    "svg": { "match": ["SVG_OGRE"] },
+    "L-eye-whites": { "match": ["L-eyeball", "L-eyeball-outline", "L-eyeball-outline-2"], "note": "Canonical asset ids are L-eyeball and L-eyeball-outline; L-eyeball-outline-2 is accepted only as a legacy compatibility alias." },
+    "R-eye-whites": { "match": ["R-eyeball", "R-eyeball-outline"] },
+    "L-pupil": { "match": ["L-pupil"] },
+    "R-pupil": { "match": ["R-pupil"] },
+    "L-brow": { "match": ["L-eyebrow", "L-eyebrow-outline"] },
+    "R-brow": { "match": ["R-eyebrow", "R-eyebrow-outline"] },
+    "mouth": { "match": ["Mouth", "Mouth-outline"] },
+    "fangs": { "match": ["fangs"] },
+    "mouth-A": { "match": ["mouth-A"], "note": "viseme slot; art landed" },
+    "mouth-B": { "match": ["mouth-B"], "note": "viseme slot; art landed" },
+    "mouth-C": { "match": ["mouth-C"], "note": "viseme slot; art landed" },
+    "mouth-D": { "match": ["mouth-D"], "note": "viseme slot; art landed" },
+    "mouth-E": { "match": ["mouth-E"], "note": "viseme slot; art landed" },
+    "mouth-F": { "match": ["mouth-F"], "note": "viseme slot; art landed" },
+    "mouth-G": { "match": ["mouth-G"], "note": "viseme slot; art landed" },
+    "mouth-H": { "match": ["mouth-H"], "note": "viseme slot; art landed" },
+    "mouth-X": { "match": ["mouth-X"], "note": "viseme slot; art landed" },
+    "upper-fangs": { "match": ["upper-fangs"], "note": "shared fang overlay; art pending" },
+    "lower-fangs": { "match": ["lower-fangs"], "note": "shared fang overlay; art pending" },
+    "nose": { "match": ["Nose-outline"] }
+  },
+  "visemes": {
+    "standard": "rhubarb-1",
+    "rest": "X",
+    "map": {"A":"mouth-A","B":"mouth-B","C":"mouth-C","D":"mouth-D","E":"mouth-E","F":"mouth-F","G":"mouth-G","H":"mouth-H","X":"mouth-X"},
+    "fallbacks": {"G":"B","H":"C"},
+    "sounds": {"A":"P B M","B":"EE K S T","C":"EH AE","D":"AA","E":"AO ER","F":"UW OW W","G":"F V","H":"L","X":"rest"},
+    "fangs": {
+      "upper": {"part":"upper-fangs","staticUpperLip":true},
+      "lower": {"part":"lower-fangs","offsetY":{"A":0,"B":0,"C":0,"D":0,"E":0,"F":0,"G":0,"H":0,"X":0}}
+    },
+    "frontSuffix": "-front",
+    "legacy": {"mouth":["Mouth","Mouth-outline"],"fangs":["fangs"]}
+  },
+  "clips": {
+    "body-reset-spin": {
+      "duration": 550,
+      "loop": false,
+      "tracks": [
+        { "part": "root", "easing": [0.4, 0, 0.2, 1], "keyframes": [
+          { "t": 0, "rotate": 0, "scale": 1 },
+          { "t": 0.3, "rotate": 108, "scale": 0.72 },
+          { "t": 0.65, "rotate": 270, "scale": 1.12 },
+          { "t": 1, "rotate": 360, "scale": 1 }
+        ] }
+      ],
+      "meta": { "apps": ["buddy", "bite"], "usedBy": ["oneshot"], "tags": ["body"], "status": "keep", "note": "resetOgreSpin; SF enter/leave spin; forwards" }
+    },
+    "body-task-pulse": {
+      "duration": 550,
+      "loop": true,
+      "tracks": [
+        { "part": "root", "easing": "easeInOut", "keyframes": [
+          { "t": 0, "scale": 1 },
+          { "t": 0.5, "scale": 1.1 },
+          { "t": 1, "scale": 1 }
+        ] }
+      ],
+      "meta": { "apps": ["buddy", "bite"], "usedBy": ["oneshot"], "tags": ["body"], "status": "merge", "note": "live taskPulse (plain-scale, 1266); shadowed translateY(-50%) variant at 1237 is dead. Parametrized scale-pop family with body-entry-pop in v1. Explicit do-pulse only" }
+    },
+    "body-breathe": {
+      "duration": 4000,
+      "loop": true,
+      "tracks": [
+        { "part": "root", "easing": "easeInOut", "keyframes": [
+          { "t": 0, "scale": 1 },
+          { "t": 0.5, "scale": 1.04 },
+          { "t": 1, "scale": 1 }
+        ] }
+      ],
+      "meta": { "apps": ["buddy", "bite"], "usedBy": [], "tags": ["body"], "status": "kill-candidate", "note": "ogreBreathe keyframe defined but no selector references it in either app; duration is nominal (no bound rule)" }
+    },
+    "body-timer-drift": {
+      "duration": 22000,
+      "loop": true,
+      "tracks": [
+        { "part": "root", "easing": "linear", "keyframes": [
+          { "t": 0, "rotate": 0 },
+          { "t": 1, "rotate": 360 }
+        ] }
+      ],
+      "meta": { "apps": ["buddy", "bite"], "usedBy": ["ARMED"], "tags": ["body"], "status": "merge", "note": "timerDrift 22s; applied to .ogre-layer in timer-mode. labDrift 18s lab variant folded in" }
+    },
+    "body-victory-dance": {
+      "duration": 600,
+      "loop": true,
+      "tracks": [
+        { "part": "root", "easing": "easeInOut", "keyframes": [
+          { "t": 0, "rotate": 0, "scale": 1 },
+          { "t": 0.25, "rotate": 5, "scale": 1.1 },
+          { "t": 0.5, "rotate": -5, "scale": 1.05 },
+          { "t": 0.75, "rotate": 3, "scale": 1.15 },
+          { "t": 1, "rotate": 0, "scale": 1 }
+        ] }
+      ],
+      "meta": { "apps": ["buddy", "bite"], "usedBy": ["FINISHED"], "tags": ["body"], "status": "keep", "note": "victoryDance" }
+    },
+    "body-mocking-wobble": {
+      "duration": 200,
+      "loop": true,
+      "tracks": [
+        { "part": "root", "easing": "linear", "keyframes": [
+          { "t": 0, "x": 0 },
+          { "t": 0.25, "x": -4 },
+          { "t": 0.75, "x": 4 },
+          { "t": 1, "x": 0 }
+        ] }
+      ],
+      "meta": { "apps": ["buddy", "bite"], "usedBy": ["ERROR"], "tags": ["body"], "status": "keep", "note": "mockingWobble" }
+    },
+    "body-searching-drift": {
+      "duration": 2000,
+      "loop": true,
+      "tracks": [
+        { "part": "root", "easing": "easeInOut", "keyframes": [
+          { "t": 0, "x": 0 },
+          { "t": 0.25, "x": -15, "rotate": -5 },
+          { "t": 0.75, "x": 15, "rotate": 5 },
+          { "t": 1, "x": 0 }
+        ] }
+      ],
+      "meta": { "apps": ["buddy", "bite"], "usedBy": ["SCANNING", "POLLING", "FIENDING"], "tags": ["body"], "status": "keep", "note": "searchingDrift" }
+    },
+    "body-entry-pop": {
+      "duration": 500,
+      "loop": false,
+      "tracks": [
+        { "part": "root", "easing": [0.36, 0.07, 0.19, 0.97], "keyframes": [
+          { "t": 0, "scale": 1 },
+          { "t": 0.35, "scale": 1.18 },
+          { "t": 0.65, "scale": 0.96 },
+          { "t": 1, "scale": 1 }
+        ] }
+      ],
+      "meta": { "apps": ["buddy"], "usedBy": ["oneshot"], "tags": ["body"], "status": "merge", "note": "entryPulse; forwards; source had translateY(-50%) baseline (positioning, dropped). Parametrized scale-pop family with body-task-pulse in v1" }
+    },
+    "bite-ogre-blast": {
+      "duration": 380,
+      "loop": false,
+      "tracks": [
+        { "part": "root", "easing": [0.34, 1.56, 0.64, 1], "keyframes": [
+          { "t": 0, "x": 30, "rotate": 35, "scale": 0.1, "opacity": 0 },
+          { "t": 0.78, "rotate": 4, "scale": 0.92, "opacity": 1 },
+          { "t": 1, "rotate": 0, "scale": 1, "opacity": 1 }
+        ] }
+      ],
+      "meta": { "apps": ["buddy", "bite"], "usedBy": ["oneshot"], "tags": ["fx"], "status": "keep", "note": "ogreBlast; SF-toggle hover-ogre entrance. Present in both apps (popup.css 1561, bite styles.css 2198); translateY(-50%) baseline is positioning and dropped" }
+    },
+    "body-spin": {
+      "duration": 1200,
+      "loop": true,
+      "tracks": [
+        { "part": "root", "easing": "linear", "keyframes": [
+          { "t": 0, "rotate": 0 },
+          { "t": 1, "rotate": 360 }
+        ] }
+      ],
+      "meta": { "apps": ["lab"], "usedBy": [], "tags": ["body"], "status": "keep", "note": "labSpin 1.2s; used by lab spin toggle only" }
+    },
+    "body-armed-wobble": {
+      "duration": 1500,
+      "loop": true,
+      "tracks": [
+        { "part": "root", "easing": "easeInOut", "keyframes": [
+          { "t": 0, "rotate": -2, "scale": 1, "opacity": 0.8 },
+          { "t": 0.5, "rotate": 2, "scale": 1.07, "opacity": 1 },
+          { "t": 1, "rotate": -2, "scale": 1, "opacity": 0.8 }
+        ] }
+      ],
+      "meta": { "apps": ["lab"], "usedBy": [], "tags": ["body"], "status": "kill-candidate", "note": "labArmed 1.5s; lab-only, unused in runtimes" }
+    },
+    "face-squint": {
+      "duration": 2500,
+      "loop": true,
+      "tracks": [
+        { "part": "L-eye-whites", "easing": "easeInOut", "keyframes": [ { "t": 0, "scaleY": 1 }, { "t": 0.5, "scaleY": 0.25 }, { "t": 1, "scaleY": 1 } ] },
+        { "part": "L-pupil", "easing": "easeInOut", "keyframes": [ { "t": 0, "scaleY": 1 }, { "t": 0.5, "scaleY": 0.25 }, { "t": 1, "scaleY": 1 } ] },
+        { "part": "R-eye-whites", "delay": 50, "easing": "easeInOut", "keyframes": [ { "t": 0, "scaleY": 1 }, { "t": 0.5, "scaleY": 0.25 }, { "t": 1, "scaleY": 1 } ] },
+        { "part": "R-pupil", "delay": 50, "easing": "easeInOut", "keyframes": [ { "t": 0, "scaleY": 1 }, { "t": 0.5, "scaleY": 0.25 }, { "t": 1, "scaleY": 1 } ] },
+        { "part": "L-brow", "easing": "easeInOut", "keyframes": [ { "t": 0, "y": 0 }, { "t": 0.5, "y": 10 }, { "t": 1, "y": 0 } ] },
+        { "part": "R-brow", "delay": 50, "easing": "easeInOut", "keyframes": [ { "t": 0, "y": 0 }, { "t": 0.5, "y": 10 }, { "t": 1, "y": 0 } ] }
+      ],
+      "meta": { "apps": ["buddy", "bite"], "usedBy": ["ARMED"], "tags": ["face"], "status": "merge", "note": "scaleY-squint pair with face-unimpressed; keep the asymmetric one in v1" }
+    },
+    "face-look": {
+      "duration": 4000,
+      "loop": true,
+      "tracks": [
+        { "part": "L-eye-whites", "easing": "easeInOut", "keyframes": [ { "t": 0, "x": 0 }, { "t": 0.2, "x": 0 }, { "t": 0.4, "x": -6 }, { "t": 0.6, "x": -6 }, { "t": 0.8, "x": 0 }, { "t": 1, "x": 0 } ] },
+        { "part": "L-pupil", "easing": "easeInOut", "keyframes": [ { "t": 0, "x": 0 }, { "t": 0.2, "x": 0 }, { "t": 0.4, "x": -6 }, { "t": 0.6, "x": -6 }, { "t": 0.8, "x": 0 }, { "t": 1, "x": 0 } ] },
+        { "part": "R-eye-whites", "easing": "easeInOut", "keyframes": [ { "t": 0, "x": 0 }, { "t": 0.2, "x": 0 }, { "t": 0.4, "x": 6 }, { "t": 0.6, "x": 6 }, { "t": 0.8, "x": 0 }, { "t": 1, "x": 0 } ] },
+        { "part": "R-pupil", "easing": "easeInOut", "keyframes": [ { "t": 0, "x": 0 }, { "t": 0.2, "x": 0 }, { "t": 0.4, "x": 6 }, { "t": 0.6, "x": 6 }, { "t": 0.8, "x": 0 }, { "t": 1, "x": 0 } ] }
+      ],
+      "meta": { "apps": ["buddy", "bite"], "usedBy": ["SCANNING", "POLLING", "FIENDING"], "tags": ["face"], "status": "merge", "note": "to be superseded by micro-life glances in v1" }
+    },
+    "face-nervous": {
+      "duration": 1400,
+      "loop": true,
+      "tracks": [
+        { "part": "L-eye-whites", "easing": "easeInOut", "keyframes": [ { "t": 0, "x": 0, "y": 0 }, { "t": 0.2, "x": -2, "y": 1 }, { "t": 0.4, "x": 2, "y": -1 }, { "t": 0.6, "x": -1, "y": 2 }, { "t": 0.8, "x": 2, "y": -1 }, { "t": 1, "x": 0, "y": 0 } ] },
+        { "part": "L-pupil", "easing": "easeInOut", "keyframes": [ { "t": 0, "x": 0, "y": 0 }, { "t": 0.2, "x": -2, "y": 1 }, { "t": 0.4, "x": 2, "y": -1 }, { "t": 0.6, "x": -1, "y": 2 }, { "t": 0.8, "x": 2, "y": -1 }, { "t": 1, "x": 0, "y": 0 } ] },
+        { "part": "R-eye-whites", "delay": 200, "easing": "easeInOut", "keyframes": [ { "t": 0, "x": 0, "y": 0 }, { "t": 0.2, "x": -2, "y": 1 }, { "t": 0.4, "x": 2, "y": -1 }, { "t": 0.6, "x": -1, "y": 2 }, { "t": 0.8, "x": 2, "y": -1 }, { "t": 1, "x": 0, "y": 0 } ] },
+        { "part": "R-pupil", "delay": 200, "easing": "easeInOut", "keyframes": [ { "t": 0, "x": 0, "y": 0 }, { "t": 0.2, "x": -2, "y": 1 }, { "t": 0.4, "x": 2, "y": -1 }, { "t": 0.6, "x": -1, "y": 2 }, { "t": 0.8, "x": 2, "y": -1 }, { "t": 1, "x": 0, "y": 0 } ] },
+        { "part": "L-brow", "easing": "easeInOut", "keyframes": [ { "t": 0, "x": 0, "y": 0, "rotate": 0 }, { "t": 0.25, "x": -2, "y": -3, "rotate": -2 }, { "t": 0.75, "x": 2, "y": -2, "rotate": 1.5 }, { "t": 1, "x": 0, "y": 0, "rotate": 0 } ] },
+        { "part": "R-brow", "delay": 400, "easing": "easeInOut", "keyframes": [ { "t": 0, "x": 0, "y": 0, "rotate": 0 }, { "t": 0.25, "x": -2, "y": -3, "rotate": -2 }, { "t": 0.75, "x": 2, "y": -2, "rotate": 1.5 }, { "t": 1, "x": 0, "y": 0, "rotate": 0 } ] }
+      ],
+      "meta": { "apps": ["buddy", "bite"], "usedBy": [], "tags": ["face"], "status": "keep", "note": "fbNervBrow is 1.8s while eyes are 1.4s; brow tracks use the eye 1.4s clip duration with brow keyframes (v1 should split into two clips or normalize). Not referenced by any pool" }
+    },
+    "face-dizzy": {
+      "duration": 1200,
+      "mouthViseme": "F",
+      "loop": true,
+      "tracks": [
+        { "part": "L-eye-whites", "easing": "linear", "keyframes": [ { "t": 0, "x": 0, "y": -7 }, { "t": 0.25, "x": 7, "y": 0 }, { "t": 0.5, "x": 0, "y": 7 }, { "t": 0.75, "x": -7, "y": 0 }, { "t": 1, "x": 0, "y": -7 } ] },
+        { "part": "L-pupil", "easing": "linear", "keyframes": [ { "t": 0, "x": 0, "y": -7 }, { "t": 0.25, "x": 7, "y": 0 }, { "t": 0.5, "x": 0, "y": 7 }, { "t": 0.75, "x": -7, "y": 0 }, { "t": 1, "x": 0, "y": -7 } ] },
+        { "part": "R-eye-whites", "delay": 300, "easing": "linear", "keyframes": [ { "t": 0, "x": 0, "y": 7 }, { "t": 0.25, "x": -7, "y": 0 }, { "t": 0.5, "x": 0, "y": -7 }, { "t": 0.75, "x": 7, "y": 0 }, { "t": 1, "x": 0, "y": 7 } ] },
+        { "part": "R-pupil", "delay": 300, "easing": "linear", "keyframes": [ { "t": 0, "x": 0, "y": 7 }, { "t": 0.25, "x": -7, "y": 0 }, { "t": 0.5, "x": 0, "y": -7 }, { "t": 0.75, "x": 7, "y": 0 }, { "t": 1, "x": 0, "y": 7 } ] }
+      ],
+      "meta": { "apps": ["buddy", "bite"], "usedBy": ["ARMED"], "tags": ["face"], "status": "merge", "note": "same orbit as face-hypno, 7px vs 5px" }
+    },
+    "face-angry": {
+      "duration": 1800,
+      "loop": true,
+      "tracks": [
+        { "part": "L-brow", "easing": "easeInOut", "keyframes": [ { "t": 0, "x": 0, "y": 0, "rotate": 0 }, { "t": 0.5, "x": 7, "y": 16, "rotate": 9 }, { "t": 1, "x": 0, "y": 0, "rotate": 0 } ] },
+        { "part": "R-brow", "delay": 80, "easing": "easeInOut", "keyframes": [ { "t": 0, "x": 0, "y": 0, "rotate": 0 }, { "t": 0.5, "x": -7, "y": 16, "rotate": -9 }, { "t": 1, "x": 0, "y": 0, "rotate": 0 } ] },
+        { "part": "L-pupil", "easing": "easeInOut", "keyframes": [ { "t": 0, "scaleX": 1 }, { "t": 0.5, "scaleX": 0.3 }, { "t": 1, "scaleX": 1 } ] },
+        { "part": "R-pupil", "easing": "easeInOut", "keyframes": [ { "t": 0, "scaleX": 1 }, { "t": 0.5, "scaleX": 0.3 }, { "t": 1, "scaleX": 1 } ] }
+      ],
+      "meta": { "apps": ["buddy", "bite"], "usedBy": ["ARMED"], "tags": ["face"], "status": "keep", "note": "pupils narrow scaleX; brows converge" }
+    },
+    "face-surprised": {
+      "duration": 2000,
+      "mouthViseme": "D",
+      "loop": true,
+      "tracks": [
+        { "part": "L-brow", "easing": "easeInOut", "keyframes": [ { "t": 0, "y": 0 }, { "t": 0.5, "y": -14 }, { "t": 1, "y": 0 } ] },
+        { "part": "R-brow", "delay": 60, "easing": "easeInOut", "keyframes": [ { "t": 0, "y": 0 }, { "t": 0.5, "y": -14 }, { "t": 1, "y": 0 } ] },
+        { "part": "L-eye-whites", "easing": "easeInOut", "keyframes": [ { "t": 0, "scale": 1 }, { "t": 0.5, "scale": 1.2 }, { "t": 1, "scale": 1 } ] },
+        { "part": "L-pupil", "easing": "easeInOut", "keyframes": [ { "t": 0, "scale": 1 }, { "t": 0.5, "scale": 1.2 }, { "t": 1, "scale": 1 } ] },
+        { "part": "R-eye-whites", "delay": 80, "easing": "easeInOut", "keyframes": [ { "t": 0, "scale": 1 }, { "t": 0.5, "scale": 1.2 }, { "t": 1, "scale": 1 } ] },
+        { "part": "R-pupil", "delay": 80, "easing": "easeInOut", "keyframes": [ { "t": 0, "scale": 1 }, { "t": 0.5, "scale": 1.2 }, { "t": 1, "scale": 1 } ] }
+      ],
+      "meta": { "apps": ["buddy", "bite"], "usedBy": ["ARMED"], "tags": ["face"], "status": "keep", "note": "brows raise; eyes+pupils grow together" }
+    },
+    "face-hypno": {
+      "duration": 2000,
+      "loop": true,
+      "tracks": [
+        { "part": "L-pupil", "easing": "linear", "keyframes": [ { "t": 0, "x": 0, "y": -5 }, { "t": 0.25, "x": 5, "y": 0 }, { "t": 0.5, "x": 0, "y": 5 }, { "t": 0.75, "x": -5, "y": 0 }, { "t": 1, "x": 0, "y": -5 } ] },
+        { "part": "R-pupil", "delay": 250, "easing": "linear", "keyframes": [ { "t": 0, "x": 0, "y": 5 }, { "t": 0.25, "x": -5, "y": 0 }, { "t": 0.5, "x": 0, "y": -5 }, { "t": 0.75, "x": 5, "y": 0 }, { "t": 1, "x": 0, "y": 5 } ] },
+        { "part": "L-brow", "easing": "easeInOut", "keyframes": [ { "t": 0, "y": 0, "scaleX": 1 }, { "t": 0.5, "y": -8, "scaleX": 0.6 }, { "t": 1, "y": 0, "scaleX": 1 } ] },
+        { "part": "R-brow", "delay": 1000, "easing": "easeInOut", "keyframes": [ { "t": 0, "y": 0, "scaleX": 1 }, { "t": 0.5, "y": -8, "scaleX": 0.6 }, { "t": 1, "y": 0, "scaleX": 1 } ] }
+      ],
+      "meta": { "apps": ["buddy", "bite"], "usedBy": ["ARMED"], "tags": ["face"], "status": "merge", "note": "pupil orbit is a 1s cycle in CSS (fbHypnoCircL 1s); brow is 2s. Clip duration normalized to 2s (brow) with pupil keyframes representing one 1s orbit at half-scale offsets -> v1 must split or double pupil cycle. Same orbit as face-dizzy, 5px vs 7px" }
+    },
+    "face-wild": {
+      "duration": 1400,
+      "loop": true,
+      "tracks": [
+        { "part": "L-brow", "easing": "easeInOut", "keyframes": [ { "t": 0, "x": 0, "y": 0, "rotate": 0 }, { "t": 0.2, "x": -7, "y": -16, "rotate": -10 }, { "t": 0.4, "x": 9, "y": 7, "rotate": 5 }, { "t": 0.6, "x": -3, "y": -12, "rotate": -7 }, { "t": 0.8, "x": 11, "y": 3, "rotate": 9 }, { "t": 1, "x": 0, "y": 0, "rotate": 0 } ] },
+        { "part": "R-brow", "delay": 100, "easing": "easeInOut", "keyframes": [ { "t": 0, "x": 0, "y": 0, "rotate": 0 }, { "t": 0.2, "x": 7, "y": -14, "rotate": 9 }, { "t": 0.4, "x": -11, "y": 5, "rotate": -7 }, { "t": 0.6, "x": 5, "y": -16, "rotate": 11 }, { "t": 0.8, "x": -7, "y": 2, "rotate": -5 }, { "t": 1, "x": 0, "y": 0, "rotate": 0 } ] },
+        { "part": "L-eye-whites", "easing": "easeInOut", "keyframes": [ { "t": 0, "x": 0, "y": 0 }, { "t": 0.25, "x": 4, "y": -3 }, { "t": 0.5, "x": -3, "y": 4 }, { "t": 0.75, "x": 5, "y": 2 }, { "t": 1, "x": 0, "y": 0 } ] },
+        { "part": "L-pupil", "easing": "easeInOut", "keyframes": [ { "t": 0, "x": 0, "y": 0 }, { "t": 0.25, "x": 4, "y": -3 }, { "t": 0.5, "x": -3, "y": 4 }, { "t": 0.75, "x": 5, "y": 2 }, { "t": 1, "x": 0, "y": 0 } ] },
+        { "part": "R-eye-whites", "delay": 150, "easing": "easeInOut", "keyframes": [ { "t": 0, "x": 0, "y": 0 }, { "t": 0.25, "x": 4, "y": -3 }, { "t": 0.5, "x": -3, "y": 4 }, { "t": 0.75, "x": 5, "y": 2 }, { "t": 1, "x": 0, "y": 0 } ] },
+        { "part": "R-pupil", "delay": 150, "easing": "easeInOut", "keyframes": [ { "t": 0, "x": 0, "y": 0 }, { "t": 0.25, "x": 4, "y": -3 }, { "t": 0.5, "x": -3, "y": 4 }, { "t": 0.75, "x": 5, "y": 2 }, { "t": 1, "x": 0, "y": 0 } ] }
+      ],
+      "meta": { "apps": ["buddy", "bite"], "usedBy": ["ARMED"], "tags": ["face"], "status": "keep", "note": "brows 1.4s, eyes 1.2s in CSS; eye tracks folded to the 1.4s brow clip duration (v1 normalize)" }
+    },
+    "face-wink": {
+      "duration": 3000,
+      "loop": true,
+      "tracks": [
+        { "part": "L-eye-whites", "easing": "easeInOut", "keyframes": [ { "t": 0, "scaleY": 1 }, { "t": 0.4, "scaleY": 1 }, { "t": 0.5, "scaleY": 0.05 }, { "t": 0.6, "scaleY": 1 }, { "t": 1, "scaleY": 1 } ] },
+        { "part": "L-pupil", "easing": "easeInOut", "keyframes": [ { "t": 0, "scaleY": 1 }, { "t": 0.4, "scaleY": 1 }, { "t": 0.5, "scaleY": 0.05 }, { "t": 0.6, "scaleY": 1 }, { "t": 1, "scaleY": 1 } ] },
+        { "part": "L-brow", "easing": "easeInOut", "keyframes": [ { "t": 0, "y": 0 }, { "t": 0.4, "y": 0 }, { "t": 0.5, "y": 12 }, { "t": 0.6, "y": 0 }, { "t": 1, "y": 0 } ] }
+      ],
+      "meta": { "apps": ["buddy", "bite"], "usedBy": ["IDLE"], "tags": ["face"], "status": "keep", "note": "left-only wink; right eye untouched" }
+    },
+    "face-sleepy": {
+      "duration": 4000,
+      "mouthViseme": "X",
+      "loop": true,
+      "tracks": [
+        { "part": "L-eye-whites", "easing": "easeInOut", "keyframes": [ { "t": 0, "scaleY": 1 }, { "t": 0.3, "scaleY": 1 }, { "t": 0.65, "scaleY": 0.1 }, { "t": 0.85, "scaleY": 0.1 }, { "t": 1, "scaleY": 1 } ] },
+        { "part": "L-pupil", "easing": "easeInOut", "keyframes": [ { "t": 0, "scaleY": 1 }, { "t": 0.3, "scaleY": 1 }, { "t": 0.65, "scaleY": 0.1 }, { "t": 0.85, "scaleY": 0.1 }, { "t": 1, "scaleY": 1 } ] },
+        { "part": "R-eye-whites", "delay": 300, "easing": "easeInOut", "keyframes": [ { "t": 0, "scaleY": 1 }, { "t": 0.3, "scaleY": 1 }, { "t": 0.65, "scaleY": 0.1 }, { "t": 0.85, "scaleY": 0.1 }, { "t": 1, "scaleY": 1 } ] },
+        { "part": "R-pupil", "delay": 300, "easing": "easeInOut", "keyframes": [ { "t": 0, "scaleY": 1 }, { "t": 0.3, "scaleY": 1 }, { "t": 0.65, "scaleY": 0.1 }, { "t": 0.85, "scaleY": 0.1 }, { "t": 1, "scaleY": 1 } ] },
+        { "part": "L-brow", "easing": "easeInOut", "keyframes": [ { "t": 0, "y": 0 }, { "t": 0.3, "y": 0 }, { "t": 0.65, "y": 14, "rotate": 4 }, { "t": 0.85, "y": 14, "rotate": 4 }, { "t": 1, "y": 0 } ] },
+        { "part": "R-brow", "delay": 300, "easing": "easeInOut", "keyframes": [ { "t": 0, "y": 0 }, { "t": 0.3, "y": 0 }, { "t": 0.65, "y": 14, "rotate": 4 }, { "t": 0.85, "y": 14, "rotate": 4 }, { "t": 1, "y": 0 } ] }
+      ],
+      "meta": { "apps": ["buddy", "bite"], "usedBy": ["ARMED", "IDLE"], "tags": ["face"], "status": "keep", "note": "IDLE rare face (~1/8) and initial idle pose; also in timer pool" }
+    },
+    "face-scared": {
+      "duration": 1800,
+      "loop": true,
+      "tracks": [
+        { "part": "L-eye-whites", "easing": "easeInOut", "keyframes": [ { "t": 0, "scale": 1 }, { "t": 0.5, "scale": 1.25 }, { "t": 1, "scale": 1 } ] },
+        { "part": "R-eye-whites", "delay": 80, "easing": "easeInOut", "keyframes": [ { "t": 0, "scale": 1 }, { "t": 0.5, "scale": 1.25 }, { "t": 1, "scale": 1 } ] },
+        { "part": "L-pupil", "easing": "easeInOut", "keyframes": [ { "t": 0, "scale": 1 }, { "t": 0.5, "scale": 0.5 }, { "t": 1, "scale": 1 } ] },
+        { "part": "R-pupil", "delay": 80, "easing": "easeInOut", "keyframes": [ { "t": 0, "scale": 1 }, { "t": 0.5, "scale": 0.5 }, { "t": 1, "scale": 1 } ] },
+        { "part": "L-brow", "easing": "easeInOut", "keyframes": [ { "t": 0, "y": 0 }, { "t": 0.5, "y": -16 }, { "t": 1, "y": 0 } ] },
+        { "part": "R-brow", "delay": 60, "easing": "easeInOut", "keyframes": [ { "t": 0, "y": 0 }, { "t": 0.5, "y": -16 }, { "t": 1, "y": 0 } ] }
+      ],
+      "meta": { "apps": ["buddy", "bite"], "usedBy": ["ARMED"], "tags": ["face"], "status": "keep", "note": "whites widen while pupils shrink (separate pupil keyframes)" }
+    },
+    "face-roll-eyes": {
+      "duration": 3000,
+      "loop": true,
+      "tracks": [
+        { "part": "L-eye-whites", "easing": "easeInOut", "keyframes": [ { "t": 0, "x": 0, "y": 0 }, { "t": 0.2, "x": 0, "y": 0 }, { "t": 0.4, "x": -2, "y": -8 }, { "t": 0.6, "x": -2, "y": -8 }, { "t": 0.8, "x": 0, "y": 0 }, { "t": 1, "x": 0, "y": 0 } ] },
+        { "part": "L-pupil", "easing": "easeInOut", "keyframes": [ { "t": 0, "x": 0, "y": 0 }, { "t": 0.2, "x": 0, "y": 0 }, { "t": 0.4, "x": -2, "y": -8 }, { "t": 0.6, "x": -2, "y": -8 }, { "t": 0.8, "x": 0, "y": 0 }, { "t": 1, "x": 0, "y": 0 } ] },
+        { "part": "R-eye-whites", "delay": 100, "easing": "easeInOut", "keyframes": [ { "t": 0, "x": 0, "y": 0 }, { "t": 0.2, "x": 0, "y": 0 }, { "t": 0.4, "x": 2, "y": -8 }, { "t": 0.6, "x": 2, "y": -8 }, { "t": 0.8, "x": 0, "y": 0 }, { "t": 1, "x": 0, "y": 0 } ] },
+        { "part": "R-pupil", "delay": 100, "easing": "easeInOut", "keyframes": [ { "t": 0, "x": 0, "y": 0 }, { "t": 0.2, "x": 0, "y": 0 }, { "t": 0.4, "x": 2, "y": -8 }, { "t": 0.6, "x": 2, "y": -8 }, { "t": 0.8, "x": 0, "y": 0 }, { "t": 1, "x": 0, "y": 0 } ] }
+      ],
+      "meta": { "apps": ["buddy", "bite"], "usedBy": ["ARMED"], "tags": ["face"], "status": "keep", "note": "whole eye group drifts up" }
+    },
+    "face-big-eyes": {
+      "duration": 2500,
+      "loop": true,
+      "tracks": [
+        { "part": "L-eye-whites", "easing": "easeInOut", "keyframes": [ { "t": 0, "scale": 1 }, { "t": 0.5, "scale": 1.3 }, { "t": 1, "scale": 1 } ] },
+        { "part": "R-eye-whites", "delay": 50, "easing": "easeInOut", "keyframes": [ { "t": 0, "scale": 1 }, { "t": 0.5, "scale": 1.3 }, { "t": 1, "scale": 1 } ] },
+        { "part": "L-pupil", "easing": "easeInOut", "keyframes": [ { "t": 0, "scale": 1 }, { "t": 0.5, "scale": 1.5 }, { "t": 1, "scale": 1 } ] },
+        { "part": "R-pupil", "delay": 50, "easing": "easeInOut", "keyframes": [ { "t": 0, "scale": 1 }, { "t": 0.5, "scale": 1.5 }, { "t": 1, "scale": 1 } ] },
+        { "part": "L-brow", "easing": "easeInOut", "keyframes": [ { "t": 0, "y": 0 }, { "t": 0.5, "y": -8 }, { "t": 1, "y": 0 } ] },
+        { "part": "R-brow", "delay": 50, "easing": "easeInOut", "keyframes": [ { "t": 0, "y": 0 }, { "t": 0.5, "y": -8 }, { "t": 1, "y": 0 } ] }
+      ],
+      "meta": { "apps": ["buddy", "bite"], "usedBy": ["ARMED"], "tags": ["face"], "status": "keep", "note": "whites x1.3, pupils x1.5 (separate)" }
+    },
+    "face-unimpressed": {
+      "duration": 3500,
+      "loop": true,
+      "tracks": [
+        { "part": "L-eye-whites", "easing": "easeInOut", "keyframes": [ { "t": 0, "scaleY": 1 }, { "t": 0.5, "scaleY": 0.25 }, { "t": 1, "scaleY": 1 } ] },
+        { "part": "L-pupil", "easing": "easeInOut", "keyframes": [ { "t": 0, "scaleY": 1 }, { "t": 0.5, "scaleY": 0.25 }, { "t": 1, "scaleY": 1 } ] },
+        { "part": "L-brow", "easing": "easeInOut", "keyframes": [ { "t": 0, "y": 0 }, { "t": 0.5, "y": 8 }, { "t": 1, "y": 0 } ] },
+        { "part": "R-brow", "easing": "easeInOut", "keyframes": [ { "t": 0, "y": 0 }, { "t": 0.5, "y": 2 }, { "t": 1, "y": 0 } ] }
+      ],
+      "meta": { "apps": ["buddy", "bite"], "usedBy": ["ARMED"], "tags": ["face"], "status": "merge", "note": "scaleY-squint pair with face-squint; keep the asymmetric one in v1. R brow only 2px -> amplify-or-kill in v1" }
+    },
+    "face-idle-grin": {
+      "duration": 1,
+      "mouthViseme": "E",
+      "loop": true,
+      "tracks": [],
+      "meta": { "apps": ["brain"], "usedBy": ["VOICE_LAB"], "tags": ["face", "mouth-only"], "status": "keep", "note": "Mouth-only pose: holds the E grin with NO motion tracks, so the expression layer owns the resting mouth instead of anything writing data-mouth directly. First deliberately track-less clip in the spec; _playClip tolerates it (the tracks forEach is a no-op and loop resolves immediately). Added so Voice Lab could drop its inline-visibility hack; kept generic so idle and E can diverge later." }
+    },
+    "face-bored": {
+      "duration": 5000,
+      "mouthViseme": "X",
+      "loop": true,
+      "tracks": [
+        { "part": "L-eye-whites", "easing": "easeInOut", "keyframes": [ { "t": 0, "y": 0 }, { "t": 0.5, "y": 5 }, { "t": 1, "y": 0 } ] },
+        { "part": "L-pupil", "easing": "easeInOut", "keyframes": [ { "t": 0, "y": 0 }, { "t": 0.5, "y": 5 }, { "t": 1, "y": 0 } ] },
+        { "part": "R-eye-whites", "delay": 200, "easing": "easeInOut", "keyframes": [ { "t": 0, "y": 0 }, { "t": 0.5, "y": 5 }, { "t": 1, "y": 0 } ] },
+        { "part": "R-pupil", "delay": 200, "easing": "easeInOut", "keyframes": [ { "t": 0, "y": 0 }, { "t": 0.5, "y": 5 }, { "t": 1, "y": 0 } ] },
+        { "part": "L-brow", "easing": "easeInOut", "keyframes": [ { "t": 0, "y": 0, "rotate": 0 }, { "t": 0.5, "y": 8, "rotate": 3 }, { "t": 1, "y": 0, "rotate": 0 } ] },
+        { "part": "R-brow", "delay": 200, "easing": "easeInOut", "keyframes": [ { "t": 0, "y": 0, "rotate": 0 }, { "t": 0.5, "y": 8, "rotate": 3 }, { "t": 1, "y": 0, "rotate": 0 } ] }
+      ],
+      "meta": { "apps": ["buddy", "bite"], "usedBy": ["IDLE"], "tags": ["face"], "status": "keep", "note": "eyes droop only 5px -> amplify-or-kill in v1" }
+    },
+    "face-thinking": {
+      "duration": 3500,
+      "loop": true,
+      "tracks": [
+        { "part": "L-eye-whites", "easing": "easeInOut", "keyframes": [ { "t": 0, "x": 0, "y": 0 }, { "t": 0.5, "x": 5, "y": -5 }, { "t": 1, "x": 0, "y": 0 } ] },
+        { "part": "L-pupil", "easing": "easeInOut", "keyframes": [ { "t": 0, "x": 0, "y": 0 }, { "t": 0.5, "x": 5, "y": -5 }, { "t": 1, "x": 0, "y": 0 } ] },
+        { "part": "R-eye-whites", "easing": "easeInOut", "keyframes": [ { "t": 0, "x": 0, "y": 0 }, { "t": 0.5, "x": 5, "y": -5 }, { "t": 1, "x": 0, "y": 0 } ] },
+        { "part": "R-pupil", "easing": "easeInOut", "keyframes": [ { "t": 0, "x": 0, "y": 0 }, { "t": 0.5, "x": 5, "y": -5 }, { "t": 1, "x": 0, "y": 0 } ] },
+        { "part": "L-brow", "easing": "easeInOut", "keyframes": [ { "t": 0, "y": 0 }, { "t": 0.5, "y": -10 }, { "t": 1, "y": 0 } ] },
+        { "part": "R-brow", "easing": "easeInOut", "keyframes": [ { "t": 0, "y": 0 }, { "t": 0.5, "y": -3 }, { "t": 1, "y": 0 } ] }
+      ],
+      "meta": { "apps": ["buddy", "bite"], "usedBy": ["IDLE"], "tags": ["face"], "status": "keep", "note": "eyes drift up-right; asymmetric brows" }
+    },
+    "face-confused": {
+      "duration": 3000,
+      "loop": true,
+      "tracks": [
+        { "part": "L-brow", "easing": "easeInOut", "keyframes": [ { "t": 0, "x": 0, "y": 0, "rotate": 0 }, { "t": 0.5, "x": -4, "y": -12, "rotate": -8 }, { "t": 1, "x": 0, "y": 0, "rotate": 0 } ] },
+        { "part": "R-brow", "easing": "easeInOut", "keyframes": [ { "t": 0, "x": 0, "y": 0, "rotate": 0 }, { "t": 0.5, "x": 4, "y": 6, "rotate": 6 }, { "t": 1, "x": 0, "y": 0, "rotate": 0 } ] },
+        { "part": "L-eye-whites", "easing": "easeInOut", "keyframes": [ { "t": 0, "x": 0 }, { "t": 0.5, "x": -5 }, { "t": 1, "x": 0 } ] },
+        { "part": "L-pupil", "easing": "easeInOut", "keyframes": [ { "t": 0, "x": 0 }, { "t": 0.5, "x": -5 }, { "t": 1, "x": 0 } ] },
+        { "part": "R-eye-whites", "easing": "easeInOut", "keyframes": [ { "t": 0, "x": 0 }, { "t": 0.5, "x": 5 }, { "t": 1, "x": 0 } ] },
+        { "part": "R-pupil", "easing": "easeInOut", "keyframes": [ { "t": 0, "x": 0 }, { "t": 0.5, "x": 5 }, { "t": 1, "x": 0 } ] }
+      ],
+      "meta": { "apps": ["buddy", "bite"], "usedBy": ["IDLE"], "tags": ["face"], "status": "keep", "note": "asymmetric brows; eyes split apart" }
+    },
+    "face-smug": {
+      "duration": 3000,
+      "loop": true,
+      "tracks": [
+        { "part": "L-brow", "easing": "easeInOut", "keyframes": [ { "t": 0, "y": 0, "rotate": 0 }, { "t": 0.5, "y": -10, "rotate": -8 }, { "t": 1, "y": 0, "rotate": 0 } ] },
+        { "part": "R-brow", "easing": "easeInOut", "keyframes": [ { "t": 0, "y": 0, "rotate": 0 }, { "t": 0.5, "y": -3, "rotate": 3 }, { "t": 1, "y": 0, "rotate": 0 } ] },
+        { "part": "L-eye-whites", "easing": "easeInOut", "keyframes": [ { "t": 0, "x": 0 }, { "t": 0.5, "x": 5 }, { "t": 1, "x": 0 } ] },
+        { "part": "L-pupil", "easing": "easeInOut", "keyframes": [ { "t": 0, "x": 0 }, { "t": 0.5, "x": 5 }, { "t": 1, "x": 0 } ] },
+        { "part": "R-eye-whites", "easing": "easeInOut", "keyframes": [ { "t": 0, "x": 0 }, { "t": 0.5, "x": 5 }, { "t": 1, "x": 0 } ] },
+        { "part": "R-pupil", "easing": "easeInOut", "keyframes": [ { "t": 0, "x": 0 }, { "t": 0.5, "x": 5 }, { "t": 1, "x": 0 } ] }
+      ],
+      "meta": { "apps": ["buddy", "bite"], "usedBy": ["IDLE"], "tags": ["face"], "status": "keep", "note": "one brow arches high; R brow only 3px -> amplify-or-kill in v1" }
+    },
+    "face-side-eye": {
+      "duration": 4000,
+      "loop": true,
+      "tracks": [
+        { "part": "L-eye-whites", "easing": "easeInOut", "keyframes": [ { "t": 0, "x": 0 }, { "t": 0.15, "x": 0 }, { "t": 0.25, "x": -8 }, { "t": 0.55, "x": -8 }, { "t": 0.65, "x": 0 }, { "t": 1, "x": 0 } ] },
+        { "part": "L-pupil", "easing": "easeInOut", "keyframes": [ { "t": 0, "x": 0 }, { "t": 0.15, "x": 0 }, { "t": 0.25, "x": -8 }, { "t": 0.55, "x": -8 }, { "t": 0.65, "x": 0 }, { "t": 1, "x": 0 } ] },
+        { "part": "R-eye-whites", "easing": "easeInOut", "keyframes": [ { "t": 0, "x": 0 }, { "t": 0.15, "x": 0 }, { "t": 0.25, "x": -5 }, { "t": 0.55, "x": -5 }, { "t": 0.65, "x": 0 }, { "t": 1, "x": 0 } ] },
+        { "part": "R-pupil", "easing": "easeInOut", "keyframes": [ { "t": 0, "x": 0 }, { "t": 0.15, "x": 0 }, { "t": 0.25, "x": -5 }, { "t": 0.55, "x": -5 }, { "t": 0.65, "x": 0 }, { "t": 1, "x": 0 } ] }
+      ],
+      "meta": { "apps": ["buddy", "bite"], "usedBy": ["IDLE"], "tags": ["face"], "status": "merge", "note": "to be superseded by micro-life glances in v1" }
+    },
+    "face-cry": {
+      "duration": 2500,
+      "loop": true,
+      "tracks": [
+        { "part": "L-brow", "easing": "easeInOut", "keyframes": [ { "t": 0, "x": 0, "y": 0, "rotate": 0 }, { "t": 0.5, "x": 8, "y": 10, "rotate": 12 }, { "t": 1, "x": 0, "y": 0, "rotate": 0 } ] },
+        { "part": "R-brow", "easing": "easeInOut", "keyframes": [ { "t": 0, "x": 0, "y": 0, "rotate": 0 }, { "t": 0.5, "x": -8, "y": 10, "rotate": -12 }, { "t": 1, "x": 0, "y": 0, "rotate": 0 } ] },
+        { "part": "L-eye-whites", "easing": "easeInOut", "keyframes": [ { "t": 0, "y": 0 }, { "t": 0.5, "y": 6 }, { "t": 1, "y": 0 } ] },
+        { "part": "L-pupil", "easing": "easeInOut", "keyframes": [ { "t": 0, "y": 0 }, { "t": 0.5, "y": 6 }, { "t": 1, "y": 0 } ] },
+        { "part": "R-eye-whites", "delay": 100, "easing": "easeInOut", "keyframes": [ { "t": 0, "y": 0 }, { "t": 0.5, "y": 6 }, { "t": 1, "y": 0 } ] },
+        { "part": "R-pupil", "delay": 100, "easing": "easeInOut", "keyframes": [ { "t": 0, "y": 0 }, { "t": 0.5, "y": 6 }, { "t": 1, "y": 0 } ] }
+      ],
+      "meta": { "apps": ["buddy", "bite"], "usedBy": ["ERROR"], "tags": ["face"], "status": "keep", "note": "brows tent inward; eyes look down" }
+    },
+    "face-shifty": {
+      "duration": 1800,
+      "loop": true,
+      "tracks": [
+        { "part": "L-eye-whites", "easing": "easeInOut", "keyframes": [ { "t": 0, "x": 0 }, { "t": 0.1, "x": -6 }, { "t": 0.2, "x": 0 }, { "t": 0.5, "x": 6 }, { "t": 0.7, "x": 0 }, { "t": 1, "x": 0 } ] },
+        { "part": "L-pupil", "easing": "easeInOut", "keyframes": [ { "t": 0, "x": 0 }, { "t": 0.1, "x": -6 }, { "t": 0.2, "x": 0 }, { "t": 0.5, "x": 6 }, { "t": 0.7, "x": 0 }, { "t": 1, "x": 0 } ] },
+        { "part": "R-eye-whites", "easing": "easeInOut", "keyframes": [ { "t": 0, "x": 0 }, { "t": 0.1, "x": -4 }, { "t": 0.2, "x": 0 }, { "t": 0.5, "x": 4 }, { "t": 0.7, "x": 0 }, { "t": 1, "x": 0 } ] },
+        { "part": "R-pupil", "easing": "easeInOut", "keyframes": [ { "t": 0, "x": 0 }, { "t": 0.1, "x": -4 }, { "t": 0.2, "x": 0 }, { "t": 0.5, "x": 4 }, { "t": 0.7, "x": 0 }, { "t": 1, "x": 0 } ] }
+      ],
+      "meta": { "apps": ["buddy", "bite"], "usedBy": ["ARMED"], "tags": ["face"], "status": "merge", "note": "to be superseded by micro-life glances in v1" }
+    },
+    "face-pout": {
+      "duration": 3000,
+      "loop": true,
+      "tracks": [
+        { "part": "L-brow", "easing": "easeInOut", "keyframes": [ { "t": 0, "x": 0, "y": 0, "rotate": 0 }, { "t": 0.5, "x": 4, "y": 5, "rotate": -3 }, { "t": 1, "x": 0, "y": 0, "rotate": 0 } ] },
+        { "part": "R-brow", "easing": "easeInOut", "keyframes": [ { "t": 0, "x": 0, "y": 0, "rotate": 0 }, { "t": 0.5, "x": -4, "y": 5, "rotate": 3 }, { "t": 1, "x": 0, "y": 0, "rotate": 0 } ] },
+        { "part": "mouth", "easing": "easeInOut", "keyframes": [ { "t": 0, "y": 0 }, { "t": 0.5, "y": 6, "scaleX": 1.1 }, { "t": 1, "y": 0 } ] },
+        { "part": "fangs", "easing": "easeInOut", "keyframes": [ { "t": 0, "y": 0 }, { "t": 0.5, "y": 6, "scaleX": 1.1 }, { "t": 1, "y": 0 } ] }
+      ],
+      "meta": { "apps": ["buddy", "bite"], "usedBy": ["ERROR"], "tags": ["face"], "status": "keep", "note": "mouth+fangs push out together" }
+    },
+    "face-talk": {
+      "duration": 280,
+      "loop": true,
+      "tracks": [
+        { "part": "mouth", "easing": "easeInOut", "keyframes": [ { "t": 0, "y": 0, "scaleY": 1 }, { "t": 0.45, "y": 4, "scaleY": 1.15 }, { "t": 1, "y": 0, "scaleY": 1 } ] },
+        { "part": "fangs", "easing": "easeInOut", "keyframes": [ { "t": 0, "y": 0, "scaleY": 1 }, { "t": 0.45, "y": 4, "scaleY": 1.15 }, { "t": 1, "y": 0, "scaleY": 1 } ] }
+      ],
+      "meta": { "apps": ["buddy", "bite", "brain", "chan"], "usedBy": ["voice"], "tags": ["face", "talk"], "status": "keep", "note": "Audio-keyed talking jaw; mouth and fangs only so eye/brow mood clips keep compositing." }
+    },
+    "face-talk-end": {
+      "duration": 220,
+      "loop": false,
+      "tracks": [
+        { "part": "mouth", "easing": "easeOut", "keyframes": [ { "t": 0, "y": 2, "scaleY": 1.08 }, { "t": 1, "y": 0, "scaleY": 1 } ] },
+        { "part": "fangs", "easing": "easeOut", "keyframes": [ { "t": 0, "y": 2, "scaleY": 1.08 }, { "t": 1, "y": 0, "scaleY": 1 } ] }
+      ],
+      "meta": { "apps": ["buddy", "bite", "brain", "chan"], "usedBy": ["voice"], "tags": ["face", "talk"], "status": "keep", "note": "Audio-stop release from a modestly open jaw to rest; never owns eyes or brows." }
+    },
+    "face-grumpy": {
+      "duration": 2200,
+      "loop": true,
+      "tracks": [
+        { "part": "L-brow", "easing": "easeInOut", "keyframes": [ { "t": 0, "x": 0, "y": 0, "rotate": 0 }, { "t": 0.5, "x": 10, "y": 18, "rotate": 14 }, { "t": 1, "x": 0, "y": 0, "rotate": 0 } ] },
+        { "part": "R-brow", "easing": "easeInOut", "keyframes": [ { "t": 0, "x": 0, "y": 0, "rotate": 0 }, { "t": 0.5, "x": -10, "y": 18, "rotate": -14 }, { "t": 1, "x": 0, "y": 0, "rotate": 0 } ] },
+        { "part": "L-eye-whites", "easing": "easeInOut", "keyframes": [ { "t": 0, "y": 0 }, { "t": 0.5, "y": 4 }, { "t": 1, "y": 0 } ] },
+        { "part": "L-pupil", "easing": "easeInOut", "keyframes": [ { "t": 0, "y": 0 }, { "t": 0.5, "y": 4 }, { "t": 1, "y": 0 } ] },
+        { "part": "R-eye-whites", "delay": 100, "easing": "easeInOut", "keyframes": [ { "t": 0, "y": 0 }, { "t": 0.5, "y": 4 }, { "t": 1, "y": 0 } ] },
+        { "part": "R-pupil", "delay": 100, "easing": "easeInOut", "keyframes": [ { "t": 0, "y": 0 }, { "t": 0.5, "y": 4 }, { "t": 1, "y": 0 } ] }
+      ],
+      "meta": { "apps": ["buddy", "bite"], "usedBy": ["ERROR"], "tags": ["face"], "status": "keep", "note": "deep brow furrow. Bite has a single #id-selector copy at styles.css ~2910 (the 'stray fbGrumpy' block); values match buddy" }
+    },
+    "face-flirty": {
+      "duration": 3000,
+      "loop": true,
+      "tracks": [
+        { "part": "L-eye-whites", "easing": "easeInOut", "keyframes": [ { "t": 0, "scaleY": 1 }, { "t": 0.5, "scaleY": 0.45 }, { "t": 1, "scaleY": 1 } ] },
+        { "part": "L-pupil", "easing": "easeInOut", "keyframes": [ { "t": 0, "scaleY": 1 }, { "t": 0.5, "scaleY": 0.45 }, { "t": 1, "scaleY": 1 } ] },
+        { "part": "L-brow", "easing": "easeInOut", "keyframes": [ { "t": 0, "y": 0, "rotate": 0 }, { "t": 0.5, "y": -10, "rotate": -6 }, { "t": 1, "y": 0, "rotate": 0 } ] },
+        { "part": "R-brow", "easing": "easeInOut", "keyframes": [ { "t": 0, "y": 0, "rotate": 0 }, { "t": 0.5, "y": -4, "rotate": 4 }, { "t": 1, "y": 0, "rotate": 0 } ] }
+      ],
+      "meta": { "apps": ["buddy", "bite"], "usedBy": [], "tags": ["face"], "status": "keep", "note": "half-squint, one brow arched. Not referenced by any pool" }
+    },
+    "face-excited": {
+      "duration": 600,
+      "loop": true,
+      "tracks": [
+        { "part": "L-brow", "easing": "easeInOut", "keyframes": [ { "t": 0, "y": 0 }, { "t": 0.25, "y": -12 }, { "t": 0.75, "y": -12 }, { "t": 1, "y": 0 } ] },
+        { "part": "R-brow", "delay": 80, "easing": "easeInOut", "keyframes": [ { "t": 0, "y": 0 }, { "t": 0.25, "y": -12 }, { "t": 0.75, "y": -12 }, { "t": 1, "y": 0 } ] },
+        { "part": "L-eye-whites", "easing": "easeInOut", "keyframes": [ { "t": 0, "scaleY": 1 }, { "t": 0.25, "scaleY": 1.15 }, { "t": 0.75, "scaleY": 1.15 }, { "t": 1, "scaleY": 1 } ] },
+        { "part": "L-pupil", "easing": "easeInOut", "keyframes": [ { "t": 0, "scaleY": 1 }, { "t": 0.25, "scaleY": 1.15 }, { "t": 0.75, "scaleY": 1.15 }, { "t": 1, "scaleY": 1 } ] },
+        { "part": "R-eye-whites", "delay": 80, "easing": "easeInOut", "keyframes": [ { "t": 0, "scaleY": 1 }, { "t": 0.25, "scaleY": 1.15 }, { "t": 0.75, "scaleY": 1.15 }, { "t": 1, "scaleY": 1 } ] },
+        { "part": "R-pupil", "delay": 80, "easing": "easeInOut", "keyframes": [ { "t": 0, "scaleY": 1 }, { "t": 0.25, "scaleY": 1.15 }, { "t": 0.75, "scaleY": 1.15 }, { "t": 1, "scaleY": 1 } ] }
+      ],
+      "meta": { "apps": ["buddy", "bite"], "usedBy": ["FINISHED"], "tags": ["face"], "status": "keep", "note": "fast brow bounce" }
+    },
+    "face-crossed": {
+      "duration": 2500,
+      "loop": true,
+      "tracks": [
+        { "part": "L-eye-whites", "easing": "easeInOut", "keyframes": [ { "t": 0, "x": 0 }, { "t": 0.5, "x": 7 }, { "t": 1, "x": 0 } ] },
+        { "part": "L-pupil", "easing": "easeInOut", "keyframes": [ { "t": 0, "x": 0 }, { "t": 0.5, "x": 7 }, { "t": 1, "x": 0 } ] },
+        { "part": "R-eye-whites", "easing": "easeInOut", "keyframes": [ { "t": 0, "x": 0 }, { "t": 0.5, "x": -7 }, { "t": 1, "x": 0 } ] },
+        { "part": "R-pupil", "easing": "easeInOut", "keyframes": [ { "t": 0, "x": 0 }, { "t": 0.5, "x": -7 }, { "t": 1, "x": 0 } ] }
+      ],
+      "meta": { "apps": ["buddy", "bite"], "usedBy": [], "tags": ["face"], "status": "keep", "note": "eyes cross toward nose. Not referenced by any pool" }
+    },
+    "face-intense": {
+      "duration": 1600,
+      "loop": true,
+      "tracks": [
+        { "part": "L-brow", "easing": "easeInOut", "keyframes": [ { "t": 0, "x": 0, "y": 0, "rotate": 0 }, { "t": 0.5, "x": 6, "y": 10, "rotate": 6 }, { "t": 1, "x": 0, "y": 0, "rotate": 0 } ] },
+        { "part": "R-brow", "easing": "easeInOut", "keyframes": [ { "t": 0, "x": 0, "y": 0, "rotate": 0 }, { "t": 0.5, "x": -6, "y": 10, "rotate": -6 }, { "t": 1, "x": 0, "y": 0, "rotate": 0 } ] },
+        { "part": "L-pupil", "easing": "easeInOut", "keyframes": [ { "t": 0, "scale": 1 }, { "t": 0.5, "scale": 0.6 }, { "t": 1, "scale": 1 } ] },
+        { "part": "R-pupil", "easing": "easeInOut", "keyframes": [ { "t": 0, "scale": 1 }, { "t": 0.5, "scale": 0.6 }, { "t": 1, "scale": 1 } ] }
+      ],
+      "meta": { "apps": ["buddy", "bite"], "usedBy": [], "tags": ["face"], "status": "keep", "note": "pupils shrink, brows lower hard. Not referenced by any pool" }
+    },
+    "face-daydream": {
+      "duration": 6000,
+      "loop": true,
+      "tracks": [
+        { "part": "L-eye-whites", "easing": "easeInOut", "keyframes": [ { "t": 0, "x": 0, "y": 0 }, { "t": 0.2, "x": 3, "y": -4 }, { "t": 0.4, "x": -2, "y": -5 }, { "t": 0.6, "x": 4, "y": -2 }, { "t": 0.8, "x": -3, "y": -3 }, { "t": 1, "x": 0, "y": 0 } ] },
+        { "part": "L-pupil", "easing": "easeInOut", "keyframes": [ { "t": 0, "x": 0, "y": 0 }, { "t": 0.2, "x": 3, "y": -4 }, { "t": 0.4, "x": -2, "y": -5 }, { "t": 0.6, "x": 4, "y": -2 }, { "t": 0.8, "x": -3, "y": -3 }, { "t": 1, "x": 0, "y": 0 } ] },
+        { "part": "R-eye-whites", "easing": "easeInOut", "keyframes": [ { "t": 0, "x": 0, "y": 0 }, { "t": 0.2, "x": -3, "y": -3 }, { "t": 0.4, "x": 4, "y": -4 }, { "t": 0.6, "x": -2, "y": -5 }, { "t": 0.8, "x": 3, "y": -2 }, { "t": 1, "x": 0, "y": 0 } ] },
+        { "part": "R-pupil", "easing": "easeInOut", "keyframes": [ { "t": 0, "x": 0, "y": 0 }, { "t": 0.2, "x": -3, "y": -3 }, { "t": 0.4, "x": 4, "y": -4 }, { "t": 0.6, "x": -2, "y": -5 }, { "t": 0.8, "x": 3, "y": -2 }, { "t": 1, "x": 0, "y": 0 } ] },
+        { "part": "L-brow", "easing": "easeInOut", "keyframes": [ { "t": 0, "y": 0 }, { "t": 0.5, "y": -5 }, { "t": 1, "y": 0 } ] },
+        { "part": "R-brow", "delay": 300, "easing": "easeInOut", "keyframes": [ { "t": 0, "y": 0 }, { "t": 0.5, "y": -5 }, { "t": 1, "y": 0 } ] }
+      ],
+      "meta": { "apps": ["buddy", "bite"], "usedBy": [], "tags": ["face"], "status": "keep", "note": "slow gentle drift. Not referenced by any pool" }
+    },
+    "face-mischief": {
+      "duration": 2500,
+      "loop": true,
+      "tracks": [
+        { "part": "L-brow", "easing": "easeInOut", "keyframes": [ { "t": 0, "x": 0, "y": 0, "rotate": 0 }, { "t": 0.5, "x": 5, "y": 8, "rotate": 10 }, { "t": 1, "x": 0, "y": 0, "rotate": 0 } ] },
+        { "part": "R-brow", "easing": "easeInOut", "keyframes": [ { "t": 0, "x": 0, "y": 0, "rotate": 0 }, { "t": 0.5, "x": -5, "y": -10, "rotate": -12 }, { "t": 1, "x": 0, "y": 0, "rotate": 0 } ] },
+        { "part": "L-eye-whites", "easing": "easeInOut", "keyframes": [ { "t": 0, "x": 0 }, { "t": 0.3, "x": 0 }, { "t": 0.45, "x": 6 }, { "t": 0.6, "x": 6 }, { "t": 0.7, "x": 0 }, { "t": 1, "x": 0 } ] },
+        { "part": "L-pupil", "easing": "easeInOut", "keyframes": [ { "t": 0, "x": 0 }, { "t": 0.3, "x": 0 }, { "t": 0.45, "x": 6 }, { "t": 0.6, "x": 6 }, { "t": 0.7, "x": 0 }, { "t": 1, "x": 0 } ] },
+        { "part": "R-eye-whites", "delay": 100, "easing": "easeInOut", "keyframes": [ { "t": 0, "x": 0 }, { "t": 0.3, "x": 0 }, { "t": 0.45, "x": 6 }, { "t": 0.6, "x": 6 }, { "t": 0.7, "x": 0 }, { "t": 1, "x": 0 } ] },
+        { "part": "R-pupil", "delay": 100, "easing": "easeInOut", "keyframes": [ { "t": 0, "x": 0 }, { "t": 0.3, "x": 0 }, { "t": 0.45, "x": 6 }, { "t": 0.6, "x": 6 }, { "t": 0.7, "x": 0 }, { "t": 1, "x": 0 } ] }
+      ],
+      "meta": { "apps": ["buddy", "bite"], "usedBy": ["FINISHED"], "tags": ["face"], "status": "keep", "note": "brows angle devilishly; eyes 2.5s while brows 2s in CSS -> eye tracks folded to 2.5s clip (v1 normalize)" }
+    },
+    "face-eyelash-flutter": {
+      "duration": 900,
+      "loop": true,
+      "tracks": [
+        { "part": "L-eye-whites", "easing": "easeInOut", "keyframes": [ { "t": 0, "scaleY": 1 }, { "t": 0.04, "scaleY": 0.05 }, { "t": 0.08, "scaleY": 1 }, { "t": 1, "scaleY": 1 } ] },
+        { "part": "L-pupil", "easing": "easeInOut", "keyframes": [ { "t": 0, "scaleY": 1 }, { "t": 0.04, "scaleY": 0.05 }, { "t": 0.08, "scaleY": 1 }, { "t": 1, "scaleY": 1 } ] },
+        { "part": "R-eye-whites", "delay": 150, "easing": "easeInOut", "keyframes": [ { "t": 0, "scaleY": 1 }, { "t": 0.04, "scaleY": 0.05 }, { "t": 0.08, "scaleY": 1 }, { "t": 1, "scaleY": 1 } ] },
+        { "part": "R-pupil", "delay": 150, "easing": "easeInOut", "keyframes": [ { "t": 0, "scaleY": 1 }, { "t": 0.04, "scaleY": 0.05 }, { "t": 0.08, "scaleY": 1 }, { "t": 1, "scaleY": 1 } ] }
+      ],
+      "meta": { "apps": ["buddy", "bite"], "usedBy": ["FINISHED"], "tags": ["face"], "status": "keep", "note": "fbFlutter: rapid blink at t=0.04, long open hold" }
+    },
+    "face-dead-eyes": {
+      "duration": 3000,
+      "loop": true,
+      "tracks": [
+        { "part": "L-eye-whites", "easing": "easeInOut", "keyframes": [ { "t": 0, "scaleY": 1 }, { "t": 0.5, "scaleY": 0.4 }, { "t": 1, "scaleY": 1 } ] },
+        { "part": "R-eye-whites", "delay": 200, "easing": "easeInOut", "keyframes": [ { "t": 0, "scaleY": 1 }, { "t": 0.5, "scaleY": 0.4 }, { "t": 1, "scaleY": 1 } ] },
+        { "part": "L-pupil", "easing": "easeInOut", "keyframes": [ { "t": 0, "scale": 1 }, { "t": 0.5, "scale": 0.25 }, { "t": 1, "scale": 1 } ] },
+        { "part": "R-pupil", "delay": 200, "easing": "easeInOut", "keyframes": [ { "t": 0, "scale": 1 }, { "t": 0.5, "scale": 0.25 }, { "t": 1, "scale": 1 } ] },
+        { "part": "L-brow", "easing": "easeInOut", "keyframes": [ { "t": 0, "y": 0, "rotate": 0 }, { "t": 0.5, "y": 6, "rotate": 2 }, { "t": 1, "y": 0, "rotate": 0 } ] },
+        { "part": "R-brow", "delay": 200, "easing": "easeInOut", "keyframes": [ { "t": 0, "y": 0, "rotate": 0 }, { "t": 0.5, "y": 6, "rotate": 2 }, { "t": 1, "y": 0, "rotate": 0 } ] }
+      ],
+      "meta": { "apps": ["buddy", "bite"], "usedBy": ["ERROR"], "tags": ["face"], "status": "keep", "note": "pupils shrink to dots (separate), eyes half-close" }
+    }
+  },
+  "pools": {
+    "timer-faces": {
+      "items": [
+        { "ref": "face-squint", "weight": 1 },
+        { "ref": "face-dizzy", "weight": 1 },
+        { "ref": "face-angry", "weight": 1 },
+        { "ref": "face-surprised", "weight": 1 },
+        { "ref": "face-sleepy", "weight": 1 },
+        { "ref": "face-wild", "weight": 1 },
+        { "ref": "face-scared", "weight": 1 },
+        { "ref": "face-roll-eyes", "weight": 1 },
+        { "ref": "face-big-eyes", "weight": 1 },
+        { "ref": "face-unimpressed", "weight": 1 },
+        { "ref": "face-hypno", "weight": 1 },
+        { "ref": "face-shifty", "weight": 1 }
+      ],
+      "noRepeatWindow": 1,
+      "note": "SVG_FACES_TIMER (popup.js 3034 / ui.js 53). Uniform random Math.floor(random*len); no dedupe in source"
+    },
+    "idle-faces": {
+      "items": [
+        { "ref": "face-bored", "weight": 7 },
+        { "ref": "face-thinking", "weight": 7 },
+        { "ref": "face-confused", "weight": 7 },
+        { "ref": "face-smug", "weight": 7 },
+        { "ref": "face-wink", "weight": 7 },
+        { "ref": "face-side-eye", "weight": 7 },
+        { "ref": "face-sleepy", "weight": 1 }
+      ],
+      "noRepeatWindow": 1,
+      "note": "SVG_FACES_IDLE + rare SVG_FACE_IDLE_RARE=face-sleepy. Mechanism (popup.js 3386): useRare = Math.random() < 1/8; if rare pick sleepy, else pick uniformly among the 6 common faces. Weights approximate: P(rare)=1/8, each common = (7/8)/6. Encoded as rare weight 1 vs common weight 7 (rare share = 1/(6*7+1)=1/43 approximates the intended 1/8 only loosely; the true rule is the two-stage 1/8 gate, not a flat weighted draw)"
+    },
+    "success-faces": {
+      "items": [
+        { "ref": "face-excited", "weight": 1 },
+        { "ref": "face-mischief", "weight": 1 },
+        { "ref": "face-eyelash-flutter", "weight": 1 }
+      ],
+      "noRepeatWindow": 1,
+      "note": "SVG_FACES_SUCCESS (popup.js 3044 / ui.js 61). Uniform random"
+    },
+    "greeting-warm-faces": {
+      "items": [
+        { "ref": "face-wink", "weight": 1 },
+        { "ref": "face-flirty", "weight": 1 },
+        { "ref": "face-eyelash-flutter", "weight": 1 }
+      ],
+      "noRepeatWindow": 1,
+      "note": "Greeting tier 1 of 3: the ogre notices you're back. Warmth scales upward with time away and never downward — there is no unhappy greeting pool by design."
+    },
+    "greeting-bright-faces": {
+      "items": [
+        { "ref": "face-excited", "weight": 1 },
+        { "ref": "face-big-eyes", "weight": 1 },
+        { "ref": "face-mischief", "weight": 1 }
+      ],
+      "noRepeatWindow": 1,
+      "note": "Greeting tier 2 of 3."
+    },
+    "greeting-radiant-faces": {
+      "items": [
+        { "ref": "face-wild", "weight": 1 },
+        { "ref": "face-excited", "weight": 1 },
+        { "ref": "face-eyelash-flutter", "weight": 1 }
+      ],
+      "noRepeatWindow": 1,
+      "note": "Greeting tier 3 of 3, the top of the scale. Capped here: a longer absence never produces anything beyond this, and never anything sadder."
+    },
+    "error-faces": {
+      "items": [
+        { "ref": "face-cry", "weight": 1 },
+        { "ref": "face-dead-eyes", "weight": 1 },
+        { "ref": "face-grumpy", "weight": 1 },
+        { "ref": "face-pout", "weight": 1 }
+      ],
+      "noRepeatWindow": 1,
+      "note": "SVG_FACES_ERROR (popup.js 3045 / ui.js 62). Uniform random"
+    }
+  },
+  "sequences": {},
+  "oneshots": {
+    "reset-spin": { "clip": "body-reset-spin" },
+    "entry-pop": { "clip": "body-entry-pop" },
+    "do-pulse": { "clip": "body-task-pulse", "toggle": true }
+  },
+  "states": {
+    "IDLE": { "face": { "pool": "idle-faces", "holdMs": [4000, 6000] } },
+    "ARMED": { "body": { "loop": "body-timer-drift" }, "face": { "pool": "timer-faces", "holdMs": [5000, 12000] } },
+    "SCANNING": { "body": { "loop": "body-searching-drift" }, "face": { "clip": "face-look" } },
+    "POLLING": { "body": { "loop": "body-searching-drift" }, "face": { "clip": "face-look" }, "note": "v0 alias of SCANNING; differentiate in v1" },
+    "FIENDING": { "body": { "loop": "body-searching-drift" }, "face": { "clip": "face-look" }, "note": "v0 alias; escalated set in v1" },
+    "FINISHED": { "body": { "loop": "body-victory-dance" }, "face": { "pool": "success-faces" }, "autoReturn": { "to": "IDLE", "afterMs": 2000 } },
+    "ERROR": { "body": { "loop": "body-mocking-wobble" }, "face": { "pool": "error-faces" }, "autoReturn": { "to": "IDLE", "afterMs": 3000 } }
+  },
+  "reducedMotionDefaults": { "mode": "pose", "allow": [] }
+}
