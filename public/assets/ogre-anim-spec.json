@@ -1,11 +1,11 @@
 {
   "meta": {
     "schemaVersion": 1,
-    "specVersion": "0.4.0",
+    "specVersion": "0.4.1",
     "generator": "batch1-transcription",
     "reference": { "width": 469.83, "height": 474.51, "units": "svg-user-units" },
     "blendMs": 150,
-    "notes": "v0 = faithful transcription of CSS-era animations; fancy pass comes in v1. sequences is intentionally empty in v0. Transform composition order per keyframe is translate -> rotate -> scale. Face clips transcribed from ogrebuddy/popup.css (canonical); ogrebite/src/styles.css holds an #id-selector copy with matching values. M11 adds data-only face-talk and face-talk-end clips for audio-keyed visual speech. Chrome-only pill/status/radar/shimmer/watermark animations stay in CSS and are catalogued in docs/ogre-animation-map.md, NOT here. 0.2.0: added visemes section + mouth/fang viseme rig slots (art pending); removed batch-3a placeholder mouths from full-ogre.svg. 0.3.0: hand-drawn viseme mouth art (A-H, X) inlined into full-ogre.svg slots; mouth fills themed via .m-teeth/.m-dark/.m-tongue in the injected SVG_STYLE sheet. Phase 1: data-mouth state attr + conservative expression→viseme map (surprised=D, dizzy=F, sleepy/bored=X) via clip.mouthViseme. 0.4.0: meta.reference declares the artwork's units (every offset, root included, is in viewBox units; a renderer scales by min(W/ref.width, H/ref.height)); meta.blendMs is how long a renderer eases from a part's current pose into a new clip. 0.4.0 also converted the three root x tracks from popup px to artwork units (factor 469.83/380, the popup body box), so Ogrebuddy's travel is unchanged."
+    "notes": "v0 = faithful transcription of CSS-era animations; fancy pass comes in v1. sequences is intentionally empty in v0. Transform composition order per keyframe is translate -> rotate -> scale. Face clips transcribed from ogrebuddy/popup.css (canonical); ogrebite/src/styles.css holds an #id-selector copy with matching values. M11 adds data-only face-talk and face-talk-end clips for audio-keyed visual speech. Chrome-only pill/status/radar/shimmer/watermark animations stay in CSS and are catalogued in docs/ogre-animation-map.md, NOT here. 0.2.0: added visemes section + mouth/fang viseme rig slots (art pending); removed batch-3a placeholder mouths from full-ogre.svg. 0.3.0: hand-drawn viseme mouth art (A-H, X) inlined into full-ogre.svg slots; mouth fills themed via .m-teeth/.m-dark/.m-tongue in the injected SVG_STYLE sheet. Phase 1: data-mouth state attr + conservative expression→viseme map (surprised=D, dizzy=F, sleepy/bored=X) via clip.mouthViseme. 0.4.0: meta.reference declares the artwork's units (every offset, root included, is in viewBox units; a renderer scales by min(W/ref.width, H/ref.height)); meta.blendMs is how long a renderer eases from a part's current pose into a new clip. 0.4.0 also converted the three root x tracks from popup px to artwork units (factor 469.83/380, the popup body box), so Ogrebuddy's travel is unchanged. 0.4.1: idle-faces gives face-sleepy weight 6 (1 in 8, the share Ogrebite's CSS runtime used; it was 1 in 43)."
   },
   "rig": {
     "root": { "match": [], "note": "app body element (#task-ogre / lab #ogreContainer); receives body clips" },
@@ -612,7 +612,7 @@
         { "ref": "face-smug", "weight": 7 },
         { "ref": "face-wink", "weight": 7 },
         { "ref": "face-side-eye", "weight": 7 },
-        { "ref": "face-sleepy", "weight": 1 }
+        { "ref": "face-sleepy", "weight": 6 }
       ],
       "noRepeatWindow": 1,
       "note": "SVG_FACES_IDLE + rare SVG_FACE_IDLE_RARE=face-sleepy. Mechanism (popup.js 3386): useRare = Math.random() < 1/8; if rare pick sleepy, else pick uniformly among the 6 common faces. Weights approximate: P(rare)=1/8, each common = (7/8)/6. Encoded as rare weight 1 vs common weight 7 (rare share = 1/(6*7+1)=1/43 approximates the intended 1/8 only loosely; the true rule is the two-stage 1/8 gate, not a flat weighted draw)"

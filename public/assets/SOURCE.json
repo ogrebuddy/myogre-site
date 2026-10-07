@@ -1,13 +1,13 @@
 {
   "source_repo": "ogrebuddy",
-  "source_commit": "7cb146078358ceb09070d84f6a4685a6923bcd5d",
-  "synced_at": "2026-10-07T15:34:32.209965Z",
+  "source_commit": "b6cf5ddc098f4c29fc9baeb420f9a340c411863d",
+  "synced_at": "2026-10-07T15:35:23.314633Z",
   "files": {
     "ogre-animator.js": {
       "sha256": "53119176b63a40dc2ec9e36b39760e336bb8cad55d69aa56060cf722b4f3969d"
     },
     "ogre-anim-spec.json": {
-      "sha256": "8a864e37da59dfdc96babc29e3a649d817581e01431dee1fe350f10d666b6f1f"
+      "sha256": "c0aa46bf605ab7803d7269770f4ba915dae115aeea2f8a4a9e681ee933934cea"
     },
     "full-ogre.svg": {
       "sha256": "02c646f1f1be2e18f6d66c988027599e8993a99512dfb4a56f42ec1681aa1edf"
