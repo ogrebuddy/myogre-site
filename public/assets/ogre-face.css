@@ -1,14 +1,16 @@
 /* Rig parts pivot on their own centre. Without this a rotate or scale on an
-   eye or brow pivots on the SVG's top-left corner and the part flies away. */
-#SVG_OGRE #L-eyeball, #SVG_OGRE #R-eyeball,
-#SVG_OGRE #L-eyeball-outline, #SVG_OGRE #R-eyeball-outline, #SVG_OGRE #L-eyeball-outline-2,
-#SVG_OGRE #L-pupil, #SVG_OGRE #R-pupil,
-#SVG_OGRE #L-eyebrow, #SVG_OGRE #R-eyebrow, #SVG_OGRE #L-eyebrow-outline, #SVG_OGRE #R-eyebrow-outline,
-#SVG_OGRE #L-eyelid, #SVG_OGRE #R-eyelid,
-#SVG_OGRE #Mouth, #SVG_OGRE #Mouth-outline, #SVG_OGRE #fangs, #SVG_OGRE #upper-fangs, #SVG_OGRE #lower-fangs,
-#SVG_OGRE #Nose-outline,
-#SVG_OGRE #mouth-A, #SVG_OGRE #mouth-B, #SVG_OGRE #mouth-C, #SVG_OGRE #mouth-D, #SVG_OGRE #mouth-E,
-#SVG_OGRE #mouth-F, #SVG_OGRE #mouth-G, #SVG_OGRE #mouth-H, #SVG_OGRE #mouth-X {
+   eye or brow pivots on the SVG's top-left corner and the part flies away.
+   Keyed on the rig's own class, not its id, so a clone with a renamed id
+   (the Lab's robot preview) and every host get it. */
+svg.ogre-face #L-eyeball, svg.ogre-face #R-eyeball,
+svg.ogre-face #L-eyeball-outline, svg.ogre-face #R-eyeball-outline, svg.ogre-face #L-eyeball-outline-2,
+svg.ogre-face #L-pupil, svg.ogre-face #R-pupil,
+svg.ogre-face #L-eyebrow, svg.ogre-face #R-eyebrow, svg.ogre-face #L-eyebrow-outline, svg.ogre-face #R-eyebrow-outline,
+svg.ogre-face #L-eyelid, svg.ogre-face #R-eyelid,
+svg.ogre-face #Mouth, svg.ogre-face #Mouth-outline, svg.ogre-face #fangs, svg.ogre-face #upper-fangs, svg.ogre-face #lower-fangs,
+svg.ogre-face #Nose-outline,
+svg.ogre-face #mouth-A, svg.ogre-face #mouth-B, svg.ogre-face #mouth-C, svg.ogre-face #mouth-D, svg.ogre-face #mouth-E,
+svg.ogre-face #mouth-F, svg.ogre-face #mouth-G, svg.ogre-face #mouth-H, svg.ogre-face #mouth-X {
   transform-box: fill-box;
   transform-origin: center center;
 }
