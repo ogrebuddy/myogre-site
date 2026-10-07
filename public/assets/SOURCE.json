@@ -1,7 +1,7 @@
 {
   "source_repo": "ogrebuddy",
-  "source_commit": "4127281a5347c3148582a2d3e023541587c55815",
-  "synced_at": "2026-10-07T14:42:37.171713Z",
+  "source_commit": "7cb146078358ceb09070d84f6a4685a6923bcd5d",
+  "synced_at": "2026-10-07T15:34:32.209965Z",
   "files": {
     "ogre-animator.js": {
       "sha256": "53119176b63a40dc2ec9e36b39760e336bb8cad55d69aa56060cf722b4f3969d"
