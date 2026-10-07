@@ -1,9 +1,11 @@
 {
   "meta": {
     "schemaVersion": 1,
-    "specVersion": "0.3.0",
+    "specVersion": "0.4.0",
     "generator": "batch1-transcription",
-    "notes": "v0 = faithful transcription of CSS-era animations; fancy pass comes in v1. sequences is intentionally empty in v0. Transform composition order per keyframe is translate -> rotate -> scale. Face clips transcribed from ogrebuddy/popup.css (canonical); ogrebite/src/styles.css holds an #id-selector copy with matching values. M11 adds data-only face-talk and face-talk-end clips for audio-keyed visual speech. Chrome-only pill/status/radar/shimmer/watermark animations stay in CSS and are catalogued in docs/ogre-animation-map.md, NOT here. 0.2.0: added visemes section + mouth/fang viseme rig slots (art pending); removed batch-3a placeholder mouths from full-ogre.svg. 0.3.0: hand-drawn viseme mouth art (A-H, X) inlined into full-ogre.svg slots; mouth fills themed via .m-teeth/.m-dark/.m-tongue in the injected SVG_STYLE sheet. Phase 1: data-mouth state attr + conservative expression→viseme map (surprised=D, dizzy=F, sleepy/bored=X) via clip.mouthViseme."
+    "reference": { "width": 469.83, "height": 474.51, "units": "svg-user-units" },
+    "blendMs": 150,
+    "notes": "v0 = faithful transcription of CSS-era animations; fancy pass comes in v1. sequences is intentionally empty in v0. Transform composition order per keyframe is translate -> rotate -> scale. Face clips transcribed from ogrebuddy/popup.css (canonical); ogrebite/src/styles.css holds an #id-selector copy with matching values. M11 adds data-only face-talk and face-talk-end clips for audio-keyed visual speech. Chrome-only pill/status/radar/shimmer/watermark animations stay in CSS and are catalogued in docs/ogre-animation-map.md, NOT here. 0.2.0: added visemes section + mouth/fang viseme rig slots (art pending); removed batch-3a placeholder mouths from full-ogre.svg. 0.3.0: hand-drawn viseme mouth art (A-H, X) inlined into full-ogre.svg slots; mouth fills themed via .m-teeth/.m-dark/.m-tongue in the injected SVG_STYLE sheet. Phase 1: data-mouth state attr + conservative expression→viseme map (surprised=D, dizzy=F, sleepy/bored=X) via clip.mouthViseme. 0.4.0: meta.reference declares the artwork's units (every offset, root included, is in viewBox units; a renderer scales by min(W/ref.width, H/ref.height)); meta.blendMs is how long a renderer eases from a part's current pose into a new clip. 0.4.0 also converted the three root x tracks from popup px to artwork units (factor 469.83/380, the popup body box), so Ogrebuddy's travel is unchanged."
   },
   "rig": {
     "root": { "match": [], "note": "app body element (#task-ogre / lab #ogreContainer); receives body clips" },
@@ -111,8 +113,8 @@
       "tracks": [
         { "part": "root", "easing": "linear", "keyframes": [
           { "t": 0, "x": 0 },
-          { "t": 0.25, "x": -4 },
-          { "t": 0.75, "x": 4 },
+          { "t": 0.25, "x": -5 },
+          { "t": 0.75, "x": 5 },
           { "t": 1, "x": 0 }
         ] }
       ],
@@ -124,8 +126,8 @@
       "tracks": [
         { "part": "root", "easing": "easeInOut", "keyframes": [
           { "t": 0, "x": 0 },
-          { "t": 0.25, "x": -15, "rotate": -5 },
-          { "t": 0.75, "x": 15, "rotate": 5 },
+          { "t": 0.25, "x": -19, "rotate": -5 },
+          { "t": 0.75, "x": 19, "rotate": 5 },
           { "t": 1, "x": 0 }
         ] }
       ],
@@ -149,7 +151,7 @@
       "loop": false,
       "tracks": [
         { "part": "root", "easing": [0.34, 1.56, 0.64, 1], "keyframes": [
-          { "t": 0, "x": 30, "rotate": 35, "scale": 0.1, "opacity": 0 },
+          { "t": 0, "x": 37, "rotate": 35, "scale": 0.1, "opacity": 0 },
           { "t": 0.78, "rotate": 4, "scale": 0.92, "opacity": 1 },
           { "t": 1, "rotate": 0, "scale": 1, "opacity": 1 }
         ] }

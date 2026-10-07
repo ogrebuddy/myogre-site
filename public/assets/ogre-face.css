@@ -1,0 +1,14 @@
+/* Rig parts pivot on their own centre. Without this a rotate or scale on an
+   eye or brow pivots on the SVG's top-left corner and the part flies away. */
+#SVG_OGRE #L-eyeball, #SVG_OGRE #R-eyeball,
+#SVG_OGRE #L-eyeball-outline, #SVG_OGRE #R-eyeball-outline, #SVG_OGRE #L-eyeball-outline-2,
+#SVG_OGRE #L-pupil, #SVG_OGRE #R-pupil,
+#SVG_OGRE #L-eyebrow, #SVG_OGRE #R-eyebrow, #SVG_OGRE #L-eyebrow-outline, #SVG_OGRE #R-eyebrow-outline,
+#SVG_OGRE #L-eyelid, #SVG_OGRE #R-eyelid,
+#SVG_OGRE #Mouth, #SVG_OGRE #Mouth-outline, #SVG_OGRE #fangs, #SVG_OGRE #upper-fangs, #SVG_OGRE #lower-fangs,
+#SVG_OGRE #Nose-outline,
+#SVG_OGRE #mouth-A, #SVG_OGRE #mouth-B, #SVG_OGRE #mouth-C, #SVG_OGRE #mouth-D, #SVG_OGRE #mouth-E,
+#SVG_OGRE #mouth-F, #SVG_OGRE #mouth-G, #SVG_OGRE #mouth-H, #SVG_OGRE #mouth-X {
+  transform-box: fill-box;
+  transform-origin: center center;
+}

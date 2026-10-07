@@ -64,16 +64,7 @@ svg#SVG_OGRE .m-teeth, .m-teeth { fill: var(--ogre-horn, #e7f536) !important; }
 svg#SVG_OGRE .m-dark, .m-dark   { fill: var(--ogre-outline, #111111) !important; }
 svg#SVG_OGRE .m-tongue, .m-tongue { fill: var(--ogre-pupil, #ff0077) !important; }
 
-/* SVG face animation base & transforms */
-.ogre-L-eyeball, .ogre-R-eyeball,
-.ogre-L-eyeball-outline, .ogre-R-eyeball-outline,
-.ogre-L-pupil, .ogre-R-pupil,
-.ogre-L-eyebrow, .ogre-R-eyebrow, .ogre-L-eyebrow-outline, .ogre-R-eyebrow-outline,
-.ogre-Mouth, .ogre-Mouth-outline, .ogre-fangs, .ogre-Nose-outline,
-#L-eyelid, #R-eyelid {
-  transform-box: fill-box;
-  transform-origin: center center;
-}
+/* Rig part transform origins come with the rig: /assets/ogre-face.css (mirrored from ogrebuddy). */
 
 /* Viseme Mouth Visibility Rules (Ported from Ogrebuddy popup.js) */
 svg#SVG_OGRE[data-mouth] #Mouth,
@@ -99,21 +90,6 @@ svg#SVG_OGRE[data-mouth="F"] #mouth-F,
 svg#SVG_OGRE[data-mouth="G"] #mouth-G,
 svg#SVG_OGRE[data-mouth="H"] #mouth-H,
 svg#SVG_OGRE[data-mouth="X"] #mouth-X { visibility: visible !important; }
-
-/* Automatic Eye Blink Animation */
-#L-eyelid, #R-eyelid {
-  transform-origin: center top;
-}
-
-@keyframes blinkLid {
-  0%, 90%, 100% { transform: scaleY(0); }
-  93%, 97% { transform: scaleY(1.1); }
-}
-
-svg#SVG_OGRE #L-eyelid,
-svg#SVG_OGRE #R-eyelid {
-  animation: blinkLid 4.2s ease-in-out infinite;
-}
 
 /* Bodega Neon Theme Variant (Night Storefront Mode) */
 body.theme-neon {

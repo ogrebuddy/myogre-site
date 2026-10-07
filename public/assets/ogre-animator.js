@@ -11,6 +11,7 @@
   };
 
   var PRIORITY = { microlife: 1, face: 2, oneshot: 3, body: 3, pose: 3, scrub: 3 };
+  var DEFAULT_BLEND_MS = 150; // used when the spec's meta.blendMs is absent (spec 0.4.0)
 
   function isObject(value) { return !!value && typeof value === 'object' && !Array.isArray(value); }
   function clone(value) { return JSON.parse(JSON.stringify(value)); }
@@ -33,17 +34,33 @@
     var base = hasOwn(kf, 'scale') ? Number(kf.scale) : 1;
     return { x: hasOwn(kf, 'scaleX') ? Number(kf.scaleX) : base, y: hasOwn(kf, 'scaleY') ? Number(kf.scaleY) : base };
   }
-  function compiledFrame(kf) {
+  // A compiled track keeps two views of each keyframe: `frames` (the numeric
+  // pose, in the artwork's units) and `keyframes` (the WAAPI keyframe built
+  // from it). Root tracks are rebuilt from `frames` at play time with the body
+  // element's scale (rootScale); face parts use `keyframes` as compiled.
+  function frameValues(kf) {
     var scale = normalizeScale(kf);
-    var x = numberOr(kf.x, 0);
-    var y = numberOr(kf.y, 0);
-    var rotate = numberOr(kf.rotate, 0);
-    var out = { offset: numberOr(kf.t, 0), transform: 'translate(' + x + 'px,' + y + 'px) rotate(' + rotate + 'deg) scale(' + scale.x + ',' + scale.y + ')' };
+    var out = { t: numberOr(kf.t, 0), x: numberOr(kf.x, 0), y: numberOr(kf.y, 0), rotate: numberOr(kf.rotate, 0), scaleX: scale.x, scaleY: scale.y };
     if (hasOwn(kf, 'opacity')) out.opacity = Number(kf.opacity);
-    if (hasOwn(kf, 'visible')) out.visibility = kf.visible ? 'visible' : 'hidden';
+    if (hasOwn(kf, 'visible')) out.visible = !!kf.visible;
     var easing = easingToCss(kf.easing);
     if (easing) out.easing = easing;
     return out;
+  }
+  function frameToKeyframe(values) {
+    var out = { offset: values.t, transform: 'translate(' + values.x + 'px,' + values.y + 'px) rotate(' + values.rotate + 'deg) scale(' + values.scaleX + ',' + values.scaleY + ')' };
+    if (hasOwn(values, 'opacity')) out.opacity = values.opacity;
+    if (hasOwn(values, 'visible')) out.visibility = values.visible ? 'visible' : 'hidden';
+    if (values.easing) out.easing = values.easing;
+    return out;
+  }
+  function scaledKeyframes(frames, factor) {
+    return frames.map(function (values) {
+      var scaled = Object.assign({}, values);
+      scaled.x = values.x * factor;
+      scaled.y = values.y * factor;
+      return frameToKeyframe(scaled);
+    });
   }
   function readKfValue(kf, key) {
     if (key === 'scaleX') {
@@ -125,8 +142,8 @@
   }
   function compileTrack(clip, track) {
     var springTrack = hasSpring(track.easing);
-    var frames = expandSpringTrack(track).map(compiledFrame);
-    return { part: track.part, keyframes: frames, timing: { duration: clip.duration, delay: track.delay || 0, iterations: clip.loop === true ? Infinity : (clip.loop || 1), easing: springTrack ? 'linear' : (easingToCss(track.easing) || 'linear'), fill: 'both' }, meta: track.meta || null };
+    var frames = expandSpringTrack(track).map(frameValues);
+    return { part: track.part, frames: frames, keyframes: frames.map(frameToKeyframe), timing: { duration: clip.duration, delay: track.delay || 0, iterations: clip.loop === true ? Infinity : (clip.loop || 1), easing: springTrack ? 'linear' : (easingToCss(track.easing) || 'linear'), fill: 'both' }, meta: track.meta || null };
   }
   function getClipParts(compiledClip) {
     var seen = {};
@@ -217,6 +234,17 @@
   function attrEscape(value) { return String(value).replace(/\\/g, '\\\\').replace(/"/g, '\\"'); }
   function priorityValue(value) { if (typeof value === 'number') return value; return PRIORITY[value] || PRIORITY.oneshot; }
   function makeCancelError() { var err = new Error('Animation canceled'); err.name = 'AbortError'; return err; }
+  // The pose a part shows right now (its animated computed style), used as the
+  // 0% keyframe of a blend. null when there is no computed style to read
+  // (Node, detached elements).
+  function readComputedPose(el) {
+    if (typeof getComputedStyle !== 'function') return null;
+    var style = null;
+    try { style = getComputedStyle(el); } catch (err) { style = null; }
+    if (!style) return null;
+    var opacity = parseFloat(style.opacity);
+    return { transform: style.transform && style.transform !== 'none' ? style.transform : 'none', opacity: isFinite(opacity) ? opacity : 1 };
+  }
 
   function OgreAnimator(rootEl, compiledSpec, opts) {
     opts = opts || {};
@@ -238,6 +266,7 @@
     this._timers = [];
     this._recentPools = {};
     this._scrubs = {};
+    this._blendSnapshot = null; // Map el -> pose taken by setState before it cancels the old state (10.3)
     this._expressionMouthViseme = null;
     this._speechMouthViseme = null;
     this._speechVisemeOwner = null;
@@ -306,6 +335,8 @@
   };
   OgreAnimator.prototype._cancelAnimation = function (animation) {
     if (!animation) return;
+    // A clip's blend (10.3) lives and dies with the clip.
+    if (animation.__ogreBlendAnimation) { var blend = animation.__ogreBlendAnimation; animation.__ogreBlendAnimation = null; this._cancelAnimation(blend); }
     try { animation.cancel(); } catch (err) {}
     this._untrackAnimation(animation);
     if (this._owners) { var owners = this._owners; owners.forEach(function (record, el) { if (record.animation === animation) owners.delete(el); }); }
@@ -368,6 +399,68 @@
     if (this._owners) this._owners.set(el, { animation: animation, priority: priority });
     return animation;
   };
+  // Root (body) offsets are authored in the artwork's units (meta.reference,
+  // spec 0.4.0). Face parts are SVG children, so CSS px already are user
+  // units; the body element is HTML, so its root clips scale by rendered width
+  // over the reference width. 1 when the spec has no reference or nothing is
+  // laid out yet (hidden element, Node tests).
+  OgreAnimator.prototype.rootScale = function () {
+    var reference = this.spec.meta && this.spec.meta.reference;
+    var refWidth = reference ? Number(reference.width) : 0;
+    if (!isFinite(refWidth) || refWidth <= 0) return 1;
+    var width = 0;
+    var el = this.bodyEl;
+    if (el && typeof el.getBoundingClientRect === 'function') {
+      try { width = Number(el.getBoundingClientRect().width) || 0; } catch (err) { width = 0; }
+    }
+    return width > 0 ? width / refWidth : 1;
+  };
+  OgreAnimator.prototype._trackKeyframes = function (track, rootScale) {
+    if (track.part !== 'root' || rootScale === 1 || !track.frames) return track.keyframes;
+    return scaledKeyframes(track.frames, rootScale);
+  };
+  OgreAnimator.prototype._blendMs = function () {
+    var meta = this.spec.meta || {};
+    return typeof meta.blendMs === 'number' && isFinite(meta.blendMs) && meta.blendMs >= 0 ? meta.blendMs : DEFAULT_BLEND_MS;
+  };
+  // Blend on change (spec 0.4.0, 10.3): when a clip replaces another animation
+  // on a part, ease from the pose that animation is showing into the clip's
+  // first keyframe over meta.blendMs, then play the clip unchanged from that
+  // keyframe. The blend is tracked in the clip's group (so group cancels end
+  // it), is cancelled with its clip, and never becomes the part's owner.
+  // setState cancels every group before the new state's clips start, so those
+  // clips would find no owner and never blend. Before the cancel, remember the
+  // pose each owned part is showing; _blendSource consumes the entries, and the
+  // map is dropped as soon as the clips started by that setState are running
+  // (or on stop), because the poses are stale after the next paint.
+  OgreAnimator.prototype._snapshotPoses = function () {
+    this._blendSnapshot = null;
+    if (!this._owners || typeof Map === 'undefined') return;
+    var snapshot = new Map();
+    this._owners.forEach(function (record, el) { var pose = readComputedPose(el); if (pose) snapshot.set(el, pose); });
+    this._blendSnapshot = snapshot.size ? snapshot : null;
+  };
+  OgreAnimator.prototype._blendSource = function (el) {
+    if (this._owners && this._owners.get(el)) return readComputedPose(el);
+    if (this._blendSnapshot && this._blendSnapshot.has(el)) { var pose = this._blendSnapshot.get(el); this._blendSnapshot.delete(el); return pose; }
+    return null; // nobody owns it and nothing was snapshotted: no visible pose to leave
+  };
+  OgreAnimator.prototype._startBlend = function (el, animation, from, first, blendMs, priority, group) {
+    if (!el || !el.animate || !first) return null;
+    var to = { transform: first.transform, opacity: hasOwn(first, 'opacity') ? first.opacity : 1 };
+    var blend = null;
+    try { blend = el.animate([{ transform: from.transform, opacity: from.opacity }, to], { duration: blendMs, easing: 'ease-out', fill: 'none', iterations: 1 }); } catch (err) { blend = null; }
+    if (!blend) return null;
+    blend.__ogrePriority = priority;
+    blend.__ogreGroup = group;
+    blend.__ogreBlend = true;
+    this._trackAnimation(blend, group);
+    animation.__ogreBlendAnimation = blend;
+    var self = this;
+    function done() { self._untrackAnimation(blend); if (animation.__ogreBlendAnimation === blend) animation.__ogreBlendAnimation = null; }
+    if (blend.finished && blend.finished.then) blend.finished.then(done, done);
+    return blend;
+  };
   OgreAnimator.prototype._playClip = function (clipName, opts) {
     opts = opts || {};
     var clip = this.spec.clips[clipName];
@@ -384,14 +477,21 @@
     // the legacy mouth) once the clip has actually committed to playing.
     if (group === 'face') this._setExpressionMouthViseme(clip.mouthViseme || null);
     this._emit('clipstart', { name: clipName, group: group });
+    var blendMs = opts.pose || opts.blend === false ? 0 : this._blendMs();
+    var rootScale = this.rootScale();
     clip.tracks.forEach(function (track) {
+      var keyframes = self._trackKeyframes(track, rootScale);
       asArray(self._parts[track.part]).forEach(function (el) {
         var timing = Object.assign({}, track.timing);
         if (opts.pose) { timing.duration = 0; timing.delay = 0; timing.iterations = 1; timing.fill = 'forwards'; }
         if (opts.fill) timing.fill = opts.fill;
-        var frames = opts.pose ? [track.keyframes[track.keyframes.length - 1]] : track.keyframes;
+        var frames = opts.pose ? [keyframes[keyframes.length - 1]] : keyframes;
+        // Read the current pose BEFORE _animateElement cancels the owner: cancelling snaps the part back.
+        var blendFrom = blendMs > 0 && frames.length ? self._blendSource(el) : null;
+        if (blendFrom) { timing.delay = (timing.delay || 0) + blendMs; timing.fill = 'forwards'; }
         var animation = self._animateElement(el, frames, timing, priority, group);
         if (!animation) return;
+        if (blendFrom) self._startBlend(el, animation, blendFrom, frames[0], blendMs, priority, group);
         if (!loop) finiteAnimations.push(animation);
         if (animation.finished && animation.finished.catch) animation.finished.catch(function () {});
       });
@@ -453,6 +553,15 @@
     }
     return loop();
   };
+  // Cancel one presentation overlay without stopping ambient/body state.
+  OgreAnimator.prototype.cancelGroup = function (group) {
+    this._cancelGroup(group);
+    // Finished fill-both animations are no longer tracked, but still own parts.
+    var self = this;
+    this._owners.forEach(function (owner) {
+      if (owner.animation.__ogreGroup === group) self._cancelAnimation(owner.animation);
+    });
+  };
   OgreAnimator.prototype.pose = function (clipName, opts) { opts = opts || {}; return this._playClip(clipName, Object.assign({}, opts, { pose: true, forceFinite: true, priority: opts.priority || 'pose', group: opts.group || 'pose' })); };
   OgreAnimator.prototype.scrub = function (clipName, t01) {
     var clip = this.spec.clips[clipName];
@@ -461,10 +570,12 @@
     var key = clipName;
     if (!this._scrubs[key]) this._scrubs[key] = [];
     if (!this._scrubs[key].length) {
+      var rootScale = this.rootScale();
       clip.tracks.forEach(function (track) {
+        var keyframes = self._trackKeyframes(track, rootScale);
         asArray(self._parts[track.part]).forEach(function (el) {
           if (!el.animate) return;
-          var animation = self._animateElement(el, track.keyframes, Object.assign({}, track.timing, { fill: 'both', iterations: 1 }), PRIORITY.scrub, 'scrub');
+          var animation = self._animateElement(el, keyframes, Object.assign({}, track.timing, { fill: 'both', iterations: 1 }), PRIORITY.scrub, 'scrub');
           if (animation) { animation.pause(); self._scrubs[key].push({ animation: animation, duration: clip.duration }); }
         });
       });
@@ -531,14 +642,20 @@
     var oldState = this._state ? this.spec.states[this._state] : null;
     this._state = name;
     var token = ++this._token;
+    this._snapshotPoses(); // before the cancels below snap every owned part back to rest
     this._cancelGroup('body'); this._cancelGroup('face'); this._cancelGroup('microlife'); this._cancelGroup('effects'); this._clearTimers('autoreturn');
     this._emit('statechange', { state: name });
     var self = this;
+    // The snapshot only describes what is on screen until the next paint, so it
+    // is dropped once the clips started by this call are running: after the
+    // outro or intro when there is one (the loop and face then start later,
+    // from rest), else right after the loop and face have been started.
+    function dropSnapshot() { if (token === self._token) self._blendSnapshot = null; }
     function proceed() {
       if (token !== self._token) return;
-      if (self._reducedMotion) { self._applyReducedState(state).catch(function () {}); return; }
+      if (self._reducedMotion) { self._applyReducedState(state).catch(function () {}); dropSnapshot(); return; }
       var chain = Promise.resolve();
-      if (state.body && state.body.intro) chain = chain.then(function () { return self.play(state.body.intro, { priority: 'body', group: 'body', token: token }); });
+      if (state.body && state.body.intro) chain = chain.then(function () { var intro = self.play(state.body.intro, { priority: 'body', group: 'body', token: token }); dropSnapshot(); return intro; });
       chain.then(function () {
         if (token !== self._token) return;
         if (state.body && state.body.loop) self.play(state.body.loop, { priority: 'body', group: 'body', token: token }).catch(function () {});
@@ -546,11 +663,12 @@
         self._startMicroLife(state, token);
         self._startEffects(state, token);
         if (state.autoReturn) self._setTimer(function () { self.setState(state.autoReturn.to); }, state.autoReturn.afterMs, 'autoreturn', token);
+        dropSnapshot();
       }).catch(function () {});
     }
     if (oldState && oldState.body && oldState.body.outro) {
       var outro = this.spec.clips[oldState.body.outro];
-      if (outro && outro.duration < 300) { this.play(oldState.body.outro, { priority: 'body', group: 'body', token: token }).then(proceed, proceed); return; }
+      if (outro && outro.duration < 300) { var outroPlay = this.play(oldState.body.outro, { priority: 'body', group: 'body', token: token }); dropSnapshot(); outroPlay.then(proceed, proceed); return; }
     }
     proceed();
   };
@@ -581,6 +699,7 @@
     this._speechVisemeOwner = null;
     this._setMouthViseme(null);
     this._scrubs = {};
+    this._blendSnapshot = null;
   };
   OgreAnimator.prototype.destroy = function () {
     this.stop();
