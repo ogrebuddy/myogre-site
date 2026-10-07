@@ -12,6 +12,17 @@
 
   var PRIORITY = { microlife: 1, face: 2, oneshot: 3, body: 3, pose: 3, scrub: 3 };
   var DEFAULT_BLEND_MS = 150; // used when the spec's meta.blendMs is absent (spec 0.4.0)
+  // Spec 0.5.0 (face_parity_brainstorm.md section 13): the shared schedule,
+  // mood bands, reactions and blink.
+  var DEFAULT_EPOCH_MS = 300000; // schedule.epochMs when the spec has no schedule section
+  var DEFAULT_HOLD_MS = [4000, 6000]; // a pool state without face.holdMs, when the spec's schedule.defaultHoldMs is absent too (the spec pins it so every player agrees)
+  var DEFAULT_BAND = 'calm'; // 13.2: no mood known -> calm
+  var DEFAULT_KEY = 'owner'; // 13.3: Ogrebuddy and Ogrebite are the owner's windows
+  var MOOD_AXES = ['energy', 'valence', 'bond', 'attention'];
+  var MOOD_NAME = /^[a-z_]+$/;
+  var REACTION_GROUP = 'reaction';
+  var BLINK_CLIP = 'face-blink';
+  var MAX_SCHEDULE_ENTRIES = 100000; // never hang on a degenerate spec (zero holds); a sane spec stops at the epoch end long before
 
   function isObject(value) { return !!value && typeof value === 'object' && !Array.isArray(value); }
   function clone(value) { return JSON.parse(JSON.stringify(value)); }
@@ -151,6 +162,202 @@
     asArray(compiledClip.tracks).forEach(function (track) { if (!seen[track.part]) { seen[track.part] = true; parts.push(track.part); } });
     return parts;
   }
+
+  // ---------------------------------------------------------------------------
+  // The shared face schedule (spec 0.5.0, section 13.3) - the REFERENCE
+  // IMPLEMENTATION every player (Ogrebite, the dashboard, MyOgre's FaceDirector,
+  // the robot's state machine) reproduces bit for bit. Pure functions over the
+  // spec (raw or compiled: they read states, pools, schedule and mood only);
+  // exact uint32 arithmetic through Math.imul and >>> 0. Conformance fixture:
+  // tools/schedule-golden.json (13.7), generated from these by
+  // tools/test-animator.js and mirrored to the other players' tests.
+  // ---------------------------------------------------------------------------
+  // UTF-8 bytes of a string (lone surrogates become U+FFFD, as TextEncoder does).
+  function utf8Bytes(str) {
+    var out = [];
+    str = String(str);
+    for (var i = 0; i < str.length; i += 1) {
+      var c = str.charCodeAt(i);
+      if (c >= 0xD800 && c <= 0xDBFF) {
+        var d = i + 1 < str.length ? str.charCodeAt(i + 1) : 0;
+        if (d >= 0xDC00 && d <= 0xDFFF) { c = 0x10000 + ((c - 0xD800) << 10) + (d - 0xDC00); i += 1; }
+        else c = 0xFFFD;
+      } else if (c >= 0xDC00 && c <= 0xDFFF) c = 0xFFFD;
+      if (c < 0x80) out.push(c);
+      else if (c < 0x800) out.push(0xC0 | (c >> 6), 0x80 | (c & 0x3F));
+      else if (c < 0x10000) out.push(0xE0 | (c >> 12), 0x80 | ((c >> 6) & 0x3F), 0x80 | (c & 0x3F));
+      else out.push(0xF0 | (c >> 18), 0x80 | ((c >> 12) & 0x3F), 0x80 | ((c >> 6) & 0x3F), 0x80 | (c & 0x3F));
+    }
+    return out;
+  }
+  // FNV-1a 32: h = 2166136261; per byte: h ^= b; h = (h * 16777619) mod 2^32.
+  function fnv1a32(str) {
+    var bytes = utf8Bytes(str);
+    var h = 0x811c9dc5;
+    for (var i = 0; i < bytes.length; i += 1) h = Math.imul(h ^ bytes[i], 0x01000193) >>> 0;
+    return h >>> 0;
+  }
+  // mulberry32 on uint32 state; next() returns the raw uint32 (r = out / 2^32).
+  function mulberry32(seed) {
+    var a = seed >>> 0;
+    return function next() {
+      a = (a + 0x6D2B79F5) >>> 0;
+      var t = a;
+      t = Math.imul(t ^ (t >>> 15), t | 1) >>> 0;
+      t = (t ^ ((t + Math.imul(t ^ (t >>> 7), t | 61)) >>> 0)) >>> 0;
+      return (t ^ (t >>> 14)) >>> 0;
+    };
+  }
+  function unitInterval(u32) { return u32 / 4294967296; }
+  function seedString(key, state, band, epochIndex) { return String(key) + '|' + String(state) + '|' + String(band) + '|' + String(epochIndex); }
+  function epochMsOf(spec) { var schedule = (spec && spec.schedule) || {}; var value = numberOr(schedule.epochMs, DEFAULT_EPOCH_MS); return value > 0 ? value : DEFAULT_EPOCH_MS; }
+  // The state's face.holdMs, else the spec's schedule.defaultHoldMs, else [4000, 6000].
+  function holdRangeOf(spec, state) {
+    var schedule = (spec && spec.schedule) || {};
+    var range = state && state.face && Array.isArray(state.face.holdMs) ? state.face.holdMs : (Array.isArray(schedule.defaultHoldMs) ? schedule.defaultHoldMs : DEFAULT_HOLD_MS);
+    var min = numberOr(Number(range[0]), 0);
+    var max = numberOr(Number(range[1]), min);
+    return { min: min, max: max < min ? min : max };
+  }
+  function poolItemsOf(spec, poolName) {
+    var pool = spec && spec.pools ? spec.pools[poolName] : null;
+    return { pool: pool || null, items: asArray(pool && pool.items).filter(function (item) { return isObject(item) && typeof item.ref === 'string' && item.ref; }) };
+  }
+  // x = floor(r1 * total); walk the items in listed order accumulating weights;
+  // the first with x < cumulative is the pick.
+  function weightedPick(items, weights, r1) {
+    var total = 0;
+    for (var i = 0; i < weights.length; i += 1) total += weights[i];
+    if (!(total > 0)) return items[0];
+    var x = Math.floor(r1 * total);
+    var cumulative = 0;
+    for (var j = 0; j < items.length; j += 1) { cumulative += weights[j]; if (x < cumulative) return items[j]; }
+    return items[items.length - 1];
+  }
+  // The whole epoch's sequence [{clip, holdMs}] for a pool state: eligible items
+  // (not among the last noRepeatWindow picks; all if that leaves none) in listed
+  // order, weight x the band's multiplier (default 1), r1 picks, r2 holds
+  // min + floor(r2 * (max - min + 1)), until the holds reach epochMs. The entry
+  // that straddles the epoch end is included uncut (scheduleAt cuts it).
+  function scheduleSequence(spec, args) {
+    args = args || {};
+    var state = spec && spec.states ? spec.states[args.state] : null;
+    if (!state || !state.face || !state.face.pool) return [];
+    var found = poolItemsOf(spec, state.face.pool);
+    var items = found.items;
+    if (!items.length) return [];
+    var epochMs = epochMsOf(spec);
+    var band = args.band === undefined || args.band === null ? DEFAULT_BAND : String(args.band);
+    var key = args.key === undefined || args.key === null ? DEFAULT_KEY : String(args.key);
+    var epochIndex = numberOr(args.epochIndex, 0);
+    var multipliers = (spec.mood && isObject(spec.mood.weights) && isObject(spec.mood.weights[band])) ? spec.mood.weights[band] : {};
+    var windowSize = Math.max(0, Math.floor(numberOr(found.pool.noRepeatWindow, 0)));
+    var hold = holdRangeOf(spec, state);
+    var next = mulberry32(fnv1a32(seedString(key, args.state, band, epochIndex)));
+    var history = [];
+    var t = 0;
+    var out = [];
+    while (out.length < MAX_SCHEDULE_ENTRIES) {
+      var recent = windowSize > 0 ? history.slice(Math.max(0, history.length - windowSize)) : [];
+      var eligible = items.filter(function (item) { return recent.indexOf(item.ref) === -1; });
+      if (!eligible.length) eligible = items;
+      var weights = eligible.map(function (item) {
+        var weight = numberOr(item.weight, 1);
+        var multiplier = multipliers[item.ref];
+        return weight * (typeof multiplier === 'number' && isFinite(multiplier) ? multiplier : 1);
+      });
+      var r1 = unitInterval(next());
+      var pick = weightedPick(eligible, weights, r1);
+      var r2 = unitInterval(next());
+      var holdMs = hold.min + Math.floor(r2 * (hold.max - hold.min + 1));
+      out.push({ clip: pick.ref, holdMs: holdMs });
+      history.push(pick.ref);
+      t += holdMs;
+      if (t >= epochMs) break;
+    }
+    return out;
+  }
+  // The entry covering nowMs (renderer wall clock, Unix ms): its clip, its
+  // listed hold, where it starts and where it ends - cut at the epoch end, so a
+  // renderer that re-picks at endsAtMs recomputes with the next epoch index by
+  // itself. null for a state without a pool face (a fixed face.clip has no
+  // sequence) or an empty pool.
+  function scheduleAt(spec, args) {
+    args = args || {};
+    var epochMs = epochMsOf(spec);
+    var nowMs = numberOr(args.nowMs, 0);
+    var epochIndex = Math.floor(nowMs / epochMs);
+    var entries = scheduleSequence(spec, { key: args.key, state: args.state, band: args.band, epochIndex: epochIndex });
+    if (!entries.length) return null;
+    var epochStart = epochIndex * epochMs;
+    var offset = nowMs - epochStart;
+    var start = 0;
+    var index = -1;
+    for (var i = 0; i < entries.length; i += 1) {
+      if (offset < start + entries[i].holdMs) { index = i; break; }
+      start += entries[i].holdMs;
+    }
+    var end;
+    if (index === -1) { index = entries.length - 1; start -= entries[index].holdMs; end = epochMs; } // sequence shorter than the epoch (degenerate spec): hold to the epoch end
+    else end = Math.min(start + entries[index].holdMs, epochMs);
+    var entry = entries[index];
+    return { clip: entry.clip, holdMs: entry.holdMs, startsAtMs: epochStart + start, endsAtMs: epochStart + end, epochIndex: epochIndex, index: index };
+  }
+  // The face clip a reaction row plays: its face, the payload's face for a
+  // "payload" row, or a pick from its pool through the same PRNG seeded with
+  // fnv1a32(key|reaction|name|nowMs), so a pool reaction is deterministic per
+  // call and every window that reacts at the same ms picks the same clip.
+  function reactionClip(spec, name, args) {
+    args = args || {};
+    var row = spec && spec.reactions ? spec.reactions[name] : null;
+    if (!isObject(row)) return null;
+    if (row.pool) {
+      var items = poolItemsOf(spec, row.pool).items;
+      if (!items.length) return null;
+      var key = args.key === undefined || args.key === null ? DEFAULT_KEY : String(args.key);
+      var next = mulberry32(fnv1a32(String(key) + '|reaction|' + String(name) + '|' + String(numberOr(args.nowMs, 0))));
+      var weights = items.map(function (item) { return numberOr(item.weight, 1); });
+      return weightedPick(items, weights, unitInterval(next())).ref;
+    }
+    if (row.face === 'payload') return isObject(args.payload) && typeof args.payload.face === 'string' ? args.payload.face : null;
+    return typeof row.face === 'string' ? row.face : null;
+  }
+  // 13.2: the first band (in listed order) whose every `when` rule holds on the
+  // mood vector (min inclusive, below exclusive; a missing axis fails the rule).
+  function moodBandFor(spec, vector) {
+    vector = isObject(vector) ? vector : {};
+    var bands = asArray(spec && spec.mood && spec.mood.bands);
+    for (var i = 0; i < bands.length; i += 1) {
+      var band = bands[i];
+      if (!isObject(band) || typeof band.name !== 'string') continue;
+      var when = isObject(band.when) ? band.when : {};
+      var ok = Object.keys(when).every(function (axis) {
+        var rule = when[axis];
+        if (!isObject(rule)) return true;
+        var value = Number(vector[axis]);
+        if (!isFinite(value)) return false;
+        if (hasOwn(rule, 'min') && !(value >= Number(rule.min))) return false;
+        if (hasOwn(rule, 'below') && !(value < Number(rule.below))) return false;
+        return true;
+      });
+      if (ok) return band.name;
+    }
+    return DEFAULT_BAND;
+  }
+  // 13.1: friendly mood names live on the clips. moodNames lists them in clip
+  // order (a body's face-tool enum is built from this list); clipForMood maps
+  // a name back to its clip.
+  function moodNames(spec) {
+    var clips = (spec && spec.clips) || {};
+    return Object.keys(clips).filter(function (name) { return clips[name] && typeof clips[name].mood === 'string'; }).map(function (name) { return clips[name].mood; });
+  }
+  function clipForMood(spec, mood) {
+    var clips = (spec && spec.clips) || {};
+    var names = Object.keys(clips);
+    for (var i = 0; i < names.length; i += 1) if (clips[names[i]] && clips[names[i]].mood === mood) return names[i];
+    return null;
+  }
+
   function validateSpec(spec) {
     var problems = [];
     if (!isObject(spec)) problems.push('spec must be an object');
@@ -208,14 +415,96 @@
       });
       if (state.reducedMotion && state.reducedMotion.pose && !clipExists(spec, state.reducedMotion.pose)) problems.push('state "' + name + '" reducedMotion.pose unknown clip ref "' + state.reducedMotion.pose + '"');
     });
+    // Spec 0.5.0 (section 13). Each section is optional for a reader; present,
+    // it must be well-formed and name only clips, pools and bands that exist.
+    var moodOwner = {};
+    Object.keys(clips).forEach(function (name) {
+      var clip = clips[name];
+      if (!clip || !hasOwn(clip, 'mood')) return;
+      if (typeof clip.mood !== 'string' || !MOOD_NAME.test(clip.mood)) { problems.push('clip "' + name + '" mood ' + JSON.stringify(clip.mood) + ' is not a lowercase [a-z_]+ name'); return; }
+      if (moodOwner[clip.mood]) problems.push('clip "' + name + '" mood "' + clip.mood + '" duplicates clip "' + moodOwner[clip.mood] + '"');
+      else moodOwner[clip.mood] = name;
+    });
+    var bandNames = [];
+    if (hasOwn(spec, 'mood')) {
+      var mood = spec.mood;
+      if (!isObject(mood)) problems.push('mood must be an object');
+      else {
+        if (!Array.isArray(mood.bands) || !mood.bands.length) problems.push('mood.bands must be a non-empty array');
+        asArray(mood.bands).forEach(function (band, index) {
+          if (!isObject(band) || typeof band.name !== 'string' || !MOOD_NAME.test(band.name)) { problems.push('mood.bands[' + index + '] needs a lowercase [a-z_]+ name'); return; }
+          if (bandNames.indexOf(band.name) !== -1) problems.push('mood.bands[' + index + '] duplicates band "' + band.name + '"');
+          bandNames.push(band.name);
+          if (!isObject(band.when)) { problems.push('mood band "' + band.name + '" when must be an object'); return; }
+          Object.keys(band.when).forEach(function (axis) {
+            var rule = band.when[axis];
+            if (MOOD_AXES.indexOf(axis) === -1) problems.push('mood band "' + band.name + '" when.' + axis + ' is not a mood axis (' + MOOD_AXES.join(', ') + ')');
+            if (!isObject(rule) || (!hasOwn(rule, 'min') && !hasOwn(rule, 'below'))) { problems.push('mood band "' + band.name + '" when.' + axis + ' needs min and/or below'); return; }
+            ['min', 'below'].forEach(function (bound) { if (hasOwn(rule, bound) && typeof rule[bound] !== 'number') problems.push('mood band "' + band.name + '" when.' + axis + '.' + bound + ' must be a number'); });
+          });
+        });
+        if (hasOwn(mood, 'weights')) {
+          if (!isObject(mood.weights)) problems.push('mood.weights must be an object');
+          else Object.keys(mood.weights).forEach(function (band) {
+            if (bandNames.indexOf(band) === -1) problems.push('mood.weights "' + band + '" is not a band name');
+            var table = mood.weights[band];
+            if (!isObject(table)) { problems.push('mood.weights "' + band + '" must be an object of clip -> multiplier'); return; }
+            Object.keys(table).forEach(function (ref) {
+              if (!clipExists(spec, ref)) problems.push('mood.weights "' + band + '" unknown clip ref "' + ref + '"');
+              var multiplier = table[ref];
+              if (typeof multiplier !== 'number' || !isFinite(multiplier) || multiplier < 0 || Math.floor(multiplier) !== multiplier) problems.push('mood.weights "' + band + '" "' + ref + '" must be a non-negative integer multiplier');
+            });
+          });
+        }
+      }
+    }
+    if (hasOwn(spec, 'schedule')) {
+      var schedule = spec.schedule;
+      if (!isObject(schedule)) problems.push('schedule must be an object');
+      else {
+        if (typeof schedule.epochMs !== 'number' || !(schedule.epochMs > 0) || Math.floor(schedule.epochMs) !== schedule.epochMs) problems.push('schedule.epochMs must be a positive integer (ms)');
+        if (schedule.prng !== 'mulberry32') problems.push('schedule.prng must be "mulberry32" (got ' + JSON.stringify(schedule.prng) + ')');
+        if (schedule.seed !== 'fnv1a32') problems.push('schedule.seed must be "fnv1a32" (got ' + JSON.stringify(schedule.seed) + ')');
+        if (hasOwn(schedule, 'defaultHoldMs')) {
+          var hold = schedule.defaultHoldMs;
+          if (!Array.isArray(hold) || hold.length !== 2 || typeof hold[0] !== 'number' || typeof hold[1] !== 'number' || !(hold[0] >= 0) || !(hold[1] >= hold[0])) problems.push('schedule.defaultHoldMs must be [min, max] with 0 <= min <= max');
+        }
+      }
+    }
+    if (hasOwn(spec, 'reactions')) {
+      if (!isObject(spec.reactions)) problems.push('reactions must be an object');
+      else Object.keys(spec.reactions).forEach(function (name) {
+        var row = spec.reactions[name];
+        if (!isObject(row)) { problems.push('reaction "' + name + '" must be an object'); return; }
+        var hasFace = hasOwn(row, 'face');
+        var hasPool = hasOwn(row, 'pool');
+        if (hasFace === hasPool) problems.push('reaction "' + name + '" needs exactly one of face or pool');
+        if (hasFace && row.face !== 'payload' && !clipExists(spec, row.face)) problems.push('reaction "' + name + '" face unknown clip ref "' + row.face + '"');
+        if (hasPool && !pools[row.pool]) problems.push('reaction "' + name + '" unknown pool ref "' + row.pool + '"');
+        if (hasOwn(row, 'body') && row.body !== 'payload' && !clipExists(spec, row.body)) problems.push('reaction "' + name + '" body unknown clip ref "' + row.body + '"');
+        if (typeof row.priority !== 'number' || !isFinite(row.priority)) problems.push('reaction "' + name + '" priority must be a number');
+        if (typeof row.holdMs !== 'number' || !(row.holdMs >= 0)) problems.push('reaction "' + name + '" holdMs must be a number >= 0 (0 = held until released)');
+        if (hasOwn(row, 'expiresMs') && (typeof row.expiresMs !== 'number' || !(row.expiresMs > 0))) problems.push('reaction "' + name + '" expiresMs must be a positive number');
+      });
+    }
+    if (hasOwn(spec, 'blink')) {
+      var blink = spec.blink;
+      if (!isObject(blink)) problems.push('blink must be an object');
+      else {
+        var every = blink.everyMs;
+        if (!Array.isArray(every) || every.length !== 2 || typeof every[0] !== 'number' || typeof every[1] !== 'number' || !(every[0] >= 0) || !(every[1] >= every[0])) problems.push('blink.everyMs must be [min, max] with 0 <= min <= max');
+        if (typeof blink.durationMs !== 'number' || !(blink.durationMs >= 0)) problems.push('blink.durationMs must be a number >= 0');
+        if (!Array.isArray(blink.renderers) || !blink.renderers.every(function (renderer) { return typeof renderer === 'string'; })) problems.push('blink.renderers must be an array of renderer names');
+      }
+    }
     if (problems.length) throw new Error('Invalid ogre animation spec:\n- ' + problems.join('\n- '));
     return true;
   }
   function compileSpec(spec) {
-    var compiled = { meta: clone(spec.meta || {}), rig: clone(spec.rig || {}), clips: {}, pools: clone(spec.pools || {}), sequences: clone(spec.sequences || {}), oneshots: clone(spec.oneshots || {}), states: clone(spec.states || {}), reducedMotionDefaults: clone(spec.reducedMotionDefaults || {}) };
+    var compiled = { meta: clone(spec.meta || {}), rig: clone(spec.rig || {}), clips: {}, pools: clone(spec.pools || {}), sequences: clone(spec.sequences || {}), oneshots: clone(spec.oneshots || {}), states: clone(spec.states || {}), reducedMotionDefaults: clone(spec.reducedMotionDefaults || {}), mood: isObject(spec.mood) ? clone(spec.mood) : null, schedule: isObject(spec.schedule) ? clone(spec.schedule) : null, reactions: clone(spec.reactions || {}), blink: isObject(spec.blink) ? clone(spec.blink) : null };
     Object.keys(spec.clips || {}).forEach(function (name) {
       var clip = spec.clips[name];
-      var out = { name: name, duration: clip.duration, loop: clip.loop === true, meta: clone(clip.meta || {}), mouthViseme: clip.mouthViseme || null, tracks: asArray(clip.tracks).map(function (track) { return compileTrack(clip, track); }) };
+      var out = { name: name, duration: clip.duration, loop: clip.loop === true, meta: clone(clip.meta || {}), mouthViseme: clip.mouthViseme || null, mood: typeof clip.mood === 'string' ? clip.mood : null, tracks: asArray(clip.tracks).map(function (track) { return compileTrack(clip, track); }) };
       out.parts = getClipParts(out);
       compiled.clips[name] = out;
     });
@@ -254,7 +543,11 @@
     this.bodyEl = opts.bodyEl || rootEl;
     this.spec = compiledSpec;
     this.microLifeScale = opts.microLifeScale || 1;
-    this.random = opts.random || Math.random;
+    this.random = opts.random || Math.random; // micro-life, effects and blink only; state faces follow the shared schedule (13.3)
+    this._now = typeof opts.now === 'function' ? opts.now : Date.now; // the renderer's wall clock, Unix ms (injectable for tests)
+    this._scheduleKey = typeof opts.scheduleKey === 'string' && opts.scheduleKey ? opts.scheduleKey : DEFAULT_KEY;
+    this._moodBand = DEFAULT_BAND;
+    this._reaction = null; // the active react() record: { name, face, body, resolve }
     this._state = null;
     this._token = 0;
     this._events = {};
@@ -278,9 +571,13 @@
     this._visibilityHandler = this._onVisibilityChange.bind(this);
     this._resolveParts();
     this._setupReducedMotion();
+    if (opts.moodBand !== undefined) this._moodBand = this._bandOrCalm(opts.moodBand);
     if (typeof document !== 'undefined' && document.addEventListener) document.addEventListener('visibilitychange', this._visibilityHandler);
   }
   Object.defineProperty(OgreAnimator.prototype, 'state', { get: function () { return this._state; } });
+  Object.defineProperty(OgreAnimator.prototype, 'moodBand', { get: function () { return this._moodBand; } });
+  Object.defineProperty(OgreAnimator.prototype, 'scheduleKey', { get: function () { return this._scheduleKey; } });
+  Object.defineProperty(OgreAnimator.prototype, 'activeReaction', { get: function () { return this._reaction ? this._reaction.name : null; } });
   OgreAnimator.prototype.on = function (evt, cb) { if (!this._events[evt]) this._events[evt] = []; this._events[evt].push(cb); return this; };
   OgreAnimator.prototype.off = function (evt, cb) { var list = this._events[evt]; if (!list) return this; this._events[evt] = list.filter(function (fn) { return fn !== cb; }); return this; };
   OgreAnimator.prototype._emit = function (evt, payload) { asArray(this._events[evt]).slice().forEach(function (cb) { try { cb(payload); } catch (err) { setTimeout(function () { throw err; }, 0); } }); };
@@ -433,10 +730,11 @@
   // pose each owned part is showing; _blendSource consumes the entries, and the
   // map is dropped as soon as the clips started by that setState are running
   // (or on stop), because the poses are stale after the next paint.
+  // Merges into a snapshot that is still pending (releaseReaction snapshots the
+  // reaction's parts before it cancels them, then setState snapshots the rest).
   OgreAnimator.prototype._snapshotPoses = function () {
-    this._blendSnapshot = null;
-    if (!this._owners || typeof Map === 'undefined') return;
-    var snapshot = new Map();
+    if (!this._owners || typeof Map === 'undefined') { this._blendSnapshot = null; return; }
+    var snapshot = this._blendSnapshot || new Map();
     this._owners.forEach(function (record, el) { var pose = readComputedPose(el); if (pose) snapshot.set(el, pose); });
     this._blendSnapshot = snapshot.size ? snapshot : null;
   };
@@ -600,18 +898,134 @@
     return pick;
   };
   OgreAnimator.prototype._randRange = function (range) { range = range || [0, 0]; var min = Number(range[0]) || 0; var max = Number(range[1]) || min; return min + this.random() * (max - min); };
+  // The shared schedule's entry for the current state at the wall clock (13.3).
+  OgreAnimator.prototype._scheduleEntry = function () {
+    return scheduleAt(this.spec, { key: this._scheduleKey, state: this._state, band: this._moodBand, nowMs: this._now() });
+  };
+  // A pool state's face comes from the shared schedule, never a local random:
+  // scheduleAt(key, state, band, now) names the clip and where its entry ends,
+  // the next timer fires there, and the straddling entry is cut at the epoch
+  // end, so the epoch-boundary recompute falls out of the same timer. A clip
+  // the schedule keeps across two entries (or an epoch boundary) is left
+  // running rather than restarted. A fixed face.clip state is unchanged.
   OgreAnimator.prototype._startFace = function (state, token) {
     var self = this;
     if (!state.face) return;
-    function schedulePool() {
-      if (token !== self._token) return;
-      var clip = self._pickPool(state.face.pool);
-      if (clip) self.play(clip, { priority: 'face', group: 'face', token: token }).catch(function () {});
-      self._setTimer(schedulePool, self._randRange(state.face.holdMs || [4000, 6000]), 'face', token);
-    }
-    if (state.face.pool) schedulePool();
-    else if (state.face.clip) this.play(state.face.clip, { priority: 'face', group: 'face', token: token }).catch(function () {});
+    if (state.face.pool) {
+      var current = null;
+      var tick = function () {
+        if (token !== self._token) return;
+        var entry = self._scheduleEntry();
+        if (!entry) return;
+        if (entry.clip !== current) {
+          var clip = self.spec.clips[entry.clip];
+          if (clip && !self._partsOwnedAbove(clip.parts, PRIORITY.face)) {
+            current = entry.clip;
+            self.play(entry.clip, { priority: 'face', group: 'face', token: token }).catch(function () {});
+          } else current = null; // blocked by a reaction or a pose: try again at the next entry
+        }
+        self._setTimer(tick, Math.max(1, entry.endsAtMs - self._now()), 'face', token);
+      };
+      tick();
+    } else if (state.face.clip) this.play(state.face.clip, { priority: 'face', group: 'face', token: token }).catch(function () {});
   };
+  // ---- Mood band and schedule key (13.2, 13.3) ----
+  OgreAnimator.prototype._bandOrCalm = function (band) {
+    if (typeof band !== 'string' || !band) return DEFAULT_BAND;
+    var names = asArray(this.spec.mood && this.spec.mood.bands).map(function (entry) { return entry && entry.name; });
+    return names.length && names.indexOf(band) === -1 ? DEFAULT_BAND : band;
+  };
+  // A band or key change re-seeds the schedule at once: the face timers go and
+  // the pool face is re-picked (it may change). Body, micro-life and effects
+  // are untouched; a fixed face.clip state has no schedule; nothing happens
+  // while no schedule timer is running (the face has not started yet, or
+  // reduced motion posed it) - the next start reads the new band anyway.
+  OgreAnimator.prototype._rejoinSchedule = function () {
+    var state = this._state ? this.spec.states[this._state] : null;
+    if (!state || !state.face || !state.face.pool || this._reducedMotion) return;
+    if (!this._timers.some(function (timer) { return timer.group === 'face'; })) return;
+    this._clearTimers('face');
+    this._startFace(state, this._token);
+  };
+  OgreAnimator.prototype.setMoodBand = function (band) {
+    band = this._bandOrCalm(band);
+    if (band !== this._moodBand) { this._moodBand = band; this._rejoinSchedule(); }
+    return band;
+  };
+  OgreAnimator.prototype.setMoodVector = function (vector) { return this.setMoodBand(moodBandFor(this.spec, vector)); };
+  OgreAnimator.prototype.setScheduleKey = function (key) {
+    key = typeof key === 'string' && key ? key : DEFAULT_KEY;
+    if (key !== this._scheduleKey) { this._scheduleKey = key; this._rejoinSchedule(); }
+    return key;
+  };
+  // ---- Reactions (13.4): what happens to him is shared ----
+  // Plays the row's face (a pool pick, or the payload's clip for a "payload"
+  // row) and body at the row's priority in the 'reaction' group for holdMs
+  // (0 = until releaseReaction(name)), then cancels the group and re-asserts
+  // the current state, which rejoins the shared schedule. A newer reaction
+  // replaces the current one. Resolves when the reaction ends; rejects only
+  // for an unknown name. payload.at (Unix ms) is checked against expiresMs.
+  OgreAnimator.prototype.react = function (name, payload) {
+    var row = this.spec.reactions ? this.spec.reactions[name] : null;
+    if (!isObject(row)) return Promise.reject(new Error('Unknown reaction: ' + name));
+    payload = isObject(payload) ? payload : {};
+    var now = this._now();
+    if (typeof row.expiresMs === 'number' && typeof payload.at === 'number' && now - payload.at > row.expiresMs) return Promise.resolve({ name: name, face: null, body: null, played: false, reason: 'expired' });
+    var face = reactionClip(this.spec, name, { key: this._scheduleKey, nowMs: now, payload: payload });
+    var body = row.body === 'payload' ? (typeof payload.body === 'string' ? payload.body : null) : (typeof row.body === 'string' ? row.body : null);
+    if (face && !this.spec.clips[face]) face = null; // a payload naming a clip this spec lacks plays nothing for that slot
+    if (body && !this.spec.clips[body]) body = null;
+    var priority = numberOr(row.priority, PRIORITY.oneshot);
+    var self = this;
+    // Replacing a reaction: snapshot its pose so the new clips blend out of it.
+    // The snapshot is dropped afterwards unless a setState's own is pending.
+    var ownSnapshot = false;
+    if (this._reaction) { ownSnapshot = !this._blendSnapshot; this._snapshotPoses(); this._endReaction('replaced'); }
+    var record = { name: name, face: face, body: body, resolve: null };
+    var promise = new Promise(function (resolve) { record.resolve = resolve; });
+    this._reaction = record;
+    if (face) this.play(face, { priority: priority, group: REACTION_GROUP }).catch(function () {});
+    if (body) this.play(body, { priority: priority, group: REACTION_GROUP }).catch(function () {});
+    if (ownSnapshot) this._blendSnapshot = null;
+    this._emit('reaction', { name: name, face: face, body: body, holdMs: row.holdMs, priority: priority });
+    // No token: a reaction outlives a state change (setState leaves its group alone).
+    if (row.holdMs > 0) this._setTimer(function () { self.releaseReaction(name); }, row.holdMs, REACTION_GROUP);
+    return promise;
+  };
+  OgreAnimator.prototype.releaseReaction = function (name) {
+    if (!this._reaction || (name !== undefined && this._reaction.name !== name)) return false;
+    this._snapshotPoses(); // the reaction's pose, so the state's clips blend out of it
+    this._endReaction('released');
+    if (this._state) this.setState(this._state, true);
+    else this._blendSnapshot = null;
+    return true;
+  };
+  OgreAnimator.prototype._endReaction = function (reason) {
+    var record = this._reaction;
+    this._reaction = null;
+    this._clearTimers(REACTION_GROUP);
+    this.cancelGroup(REACTION_GROUP);
+    if (record) record.resolve({ name: record.name, face: record.face, body: record.body, played: true, reason: reason });
+  };
+  // ---- Blink (13.5): timing shared through the spec, art per renderer ----
+  OgreAnimator.prototype.blinkTiming = function () {
+    var blink = this.spec.blink;
+    if (!isObject(blink)) return null;
+    return { everyMs: asArray(blink.everyMs).slice(0, 2).map(Number), durationMs: numberOr(blink.durationMs, 0), renderers: asArray(blink.renderers).slice() };
+  };
+  // The browser has no lid art yet: this plays nothing until blink.renderers
+  // lists "browser" AND the spec carries a face-blink clip (13.5).
+  OgreAnimator.prototype._startBlink = function (state, token) {
+    var timing = this.blinkTiming();
+    if (!timing || timing.renderers.indexOf('browser') === -1 || !this.spec.clips[BLINK_CLIP]) return;
+    var self = this;
+    function schedule() { self._setTimer(fire, self._randRange(timing.everyMs), 'blink', token); }
+    function fire() { if (token !== self._token) return; self.play(BLINK_CLIP, { priority: 'face', group: 'blink', token: token, forceFinite: true }).catch(function () {}); schedule(); }
+    schedule();
+  };
+  // ---- Friendly mood names (13.1) ----
+  OgreAnimator.prototype.clipMood = function (name) { var clip = this.spec.clips[name]; return clip && typeof clip.mood === 'string' ? clip.mood : null; };
+  OgreAnimator.prototype.clipForMood = function (mood) { return clipForMood(this.spec, mood); };
   OgreAnimator.prototype._startMicroLife = function (state, token) {
     var self = this;
     Object.keys(state.microLife || {}).forEach(function (key) {
@@ -643,7 +1057,7 @@
     this._state = name;
     var token = ++this._token;
     this._snapshotPoses(); // before the cancels below snap every owned part back to rest
-    this._cancelGroup('body'); this._cancelGroup('face'); this._cancelGroup('microlife'); this._cancelGroup('effects'); this._clearTimers('autoreturn');
+    this._cancelGroup('body'); this._cancelGroup('face'); this._cancelGroup('microlife'); this._cancelGroup('effects'); this._cancelGroup('blink'); this._clearTimers('autoreturn');
     this._emit('statechange', { state: name });
     var self = this;
     // The snapshot only describes what is on screen until the next paint, so it
@@ -662,6 +1076,7 @@
         self._startFace(state, token);
         self._startMicroLife(state, token);
         self._startEffects(state, token);
+        self._startBlink(state, token);
         if (state.autoReturn) self._setTimer(function () { self.setState(state.autoReturn.to); }, state.autoReturn.afterMs, 'autoreturn', token);
         dropSnapshot();
       }).catch(function () {});
@@ -689,6 +1104,7 @@
   };
   OgreAnimator.prototype.stop = function () {
     this._token += 1;
+    if (this._reaction) { var reaction = this._reaction; this._reaction = null; reaction.resolve({ name: reaction.name, face: reaction.face, body: reaction.body, played: true, reason: 'stopped' }); }
     this._clearTimers();
     this._animations.slice().forEach(this._cancelAnimation.bind(this));
     this._animations = [];
@@ -714,6 +1130,15 @@
   OgreAnimator.validateSpec = validateSpec;
   OgreAnimator.compileSpec = compileSpec;
   OgreAnimator._bakeSpring = bakeSpring;
+  // The shared schedule's reference implementation (13.3) and the spec-reading helpers (13.1, 13.2, 13.4).
+  OgreAnimator.fnv1a32 = fnv1a32;
+  OgreAnimator.mulberry32 = mulberry32;
+  OgreAnimator.scheduleSequence = scheduleSequence;
+  OgreAnimator.scheduleAt = scheduleAt;
+  OgreAnimator.reactionClip = reactionClip;
+  OgreAnimator.moodBandFor = moodBandFor;
+  OgreAnimator.moodNames = moodNames;
+  OgreAnimator.clipForMood = clipForMood;
 
   if (typeof window !== 'undefined') window.OgreAnimator = OgreAnimator;
   if (typeof module !== 'undefined' && module.exports) module.exports = OgreAnimator;

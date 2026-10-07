@@ -1,11 +1,11 @@
 {
   "meta": {
     "schemaVersion": 1,
-    "specVersion": "0.4.1",
+    "specVersion": "0.5.0",
     "generator": "batch1-transcription",
     "reference": { "width": 469.83, "height": 474.51, "units": "svg-user-units" },
     "blendMs": 150,
-    "notes": "v0 = faithful transcription of CSS-era animations; fancy pass comes in v1. sequences is intentionally empty in v0. Transform composition order per keyframe is translate -> rotate -> scale. Face clips transcribed from ogrebuddy/popup.css (canonical); ogrebite/src/styles.css holds an #id-selector copy with matching values. M11 adds data-only face-talk and face-talk-end clips for audio-keyed visual speech. Chrome-only pill/status/radar/shimmer/watermark animations stay in CSS and are catalogued in docs/ogre-animation-map.md, NOT here. 0.2.0: added visemes section + mouth/fang viseme rig slots (art pending); removed batch-3a placeholder mouths from full-ogre.svg. 0.3.0: hand-drawn viseme mouth art (A-H, X) inlined into full-ogre.svg slots; mouth fills themed via .m-teeth/.m-dark/.m-tongue in the injected SVG_STYLE sheet. Phase 1: data-mouth state attr + conservative expression→viseme map (surprised=D, dizzy=F, sleepy/bored=X) via clip.mouthViseme. 0.4.0: meta.reference declares the artwork's units (every offset, root included, is in viewBox units; a renderer scales by min(W/ref.width, H/ref.height)); meta.blendMs is how long a renderer eases from a part's current pose into a new clip. 0.4.0 also converted the three root x tracks from popup px to artwork units (factor 469.83/380, the popup body box), so Ogrebuddy's travel is unchanged. 0.4.1: idle-faces gives face-sleepy weight 6 (1 in 8, the share Ogrebite's CSS runtime used; it was 1 in 43)."
+    "notes": "v0 = faithful transcription of CSS-era animations; fancy pass comes in v1. sequences is intentionally empty in v0. Transform composition order per keyframe is translate -> rotate -> scale. Face clips transcribed from ogrebuddy/popup.css (canonical); ogrebite/src/styles.css holds an #id-selector copy with matching values. M11 adds data-only face-talk and face-talk-end clips for audio-keyed visual speech. Chrome-only pill/status/radar/shimmer/watermark animations stay in CSS and are catalogued in docs/ogre-animation-map.md, NOT here. 0.2.0: added visemes section + mouth/fang viseme rig slots (art pending); removed batch-3a placeholder mouths from full-ogre.svg. 0.3.0: hand-drawn viseme mouth art (A-H, X) inlined into full-ogre.svg slots; mouth fills themed via .m-teeth/.m-dark/.m-tongue in the injected SVG_STYLE sheet. Phase 1: data-mouth state attr + conservative expression→viseme map (surprised=D, dizzy=F, sleepy/bored=X) via clip.mouthViseme. 0.4.0: meta.reference declares the artwork's units (every offset, root included, is in viewBox units; a renderer scales by min(W/ref.width, H/ref.height)); meta.blendMs is how long a renderer eases from a part's current pose into a new clip. 0.4.0 also converted the three root x tracks from popup px to artwork units (factor 469.83/380, the popup body box), so Ogrebuddy's travel is unchanged. 0.4.1: idle-faces gives face-sleepy weight 6 (1 in 8, the share Ogrebite's CSS runtime used; it was 1 in 43). 0.5.0: every face clip but the two talk clips carries a friendly mood name (unique, [a-z_]+); new sections mood (bands over the mood vector and per-band weight multipliers), schedule (the deterministic shared face schedule: fnv1a32 seed over key|state|band|epochIndex, mulberry32 picks), reactions (the shared event table: clip or pool, body, priority, hold) and blink (shared timing, art per renderer) per face_parity_brainstorm.md section 13."
   },
   "rig": {
     "root": { "match": [], "note": "app body element (#task-ogre / lab #ogreContainer); receives body clips" },
@@ -183,6 +183,7 @@
     },
     "face-squint": {
       "duration": 2500,
+      "mood": "squint",
       "loop": true,
       "tracks": [
         { "part": "L-eye-whites", "easing": "easeInOut", "keyframes": [ { "t": 0, "scaleY": 1 }, { "t": 0.5, "scaleY": 0.25 }, { "t": 1, "scaleY": 1 } ] },
@@ -196,6 +197,7 @@
     },
     "face-look": {
       "duration": 4000,
+      "mood": "look",
       "loop": true,
       "tracks": [
         { "part": "L-eye-whites", "easing": "easeInOut", "keyframes": [ { "t": 0, "x": 0 }, { "t": 0.2, "x": 0 }, { "t": 0.4, "x": -6 }, { "t": 0.6, "x": -6 }, { "t": 0.8, "x": 0 }, { "t": 1, "x": 0 } ] },
@@ -207,6 +209,7 @@
     },
     "face-nervous": {
       "duration": 1400,
+      "mood": "nervous",
       "loop": true,
       "tracks": [
         { "part": "L-eye-whites", "easing": "easeInOut", "keyframes": [ { "t": 0, "x": 0, "y": 0 }, { "t": 0.2, "x": -2, "y": 1 }, { "t": 0.4, "x": 2, "y": -1 }, { "t": 0.6, "x": -1, "y": 2 }, { "t": 0.8, "x": 2, "y": -1 }, { "t": 1, "x": 0, "y": 0 } ] },
@@ -220,6 +223,7 @@
     },
     "face-dizzy": {
       "duration": 1200,
+      "mood": "dizzy",
       "mouthViseme": "F",
       "loop": true,
       "tracks": [
@@ -232,6 +236,7 @@
     },
     "face-angry": {
       "duration": 1800,
+      "mood": "angry",
       "loop": true,
       "tracks": [
         { "part": "L-brow", "easing": "easeInOut", "keyframes": [ { "t": 0, "x": 0, "y": 0, "rotate": 0 }, { "t": 0.5, "x": 7, "y": 16, "rotate": 9 }, { "t": 1, "x": 0, "y": 0, "rotate": 0 } ] },
@@ -243,6 +248,7 @@
     },
     "face-surprised": {
       "duration": 2000,
+      "mood": "surprised",
       "mouthViseme": "D",
       "loop": true,
       "tracks": [
@@ -257,6 +263,7 @@
     },
     "face-hypno": {
       "duration": 2000,
+      "mood": "hypno",
       "loop": true,
       "tracks": [
         { "part": "L-pupil", "easing": "linear", "keyframes": [ { "t": 0, "x": 0, "y": -5 }, { "t": 0.25, "x": 5, "y": 0 }, { "t": 0.5, "x": 0, "y": 5 }, { "t": 0.75, "x": -5, "y": 0 }, { "t": 1, "x": 0, "y": -5 } ] },
@@ -268,6 +275,7 @@
     },
     "face-wild": {
       "duration": 1400,
+      "mood": "silly",
       "loop": true,
       "tracks": [
         { "part": "L-brow", "easing": "easeInOut", "keyframes": [ { "t": 0, "x": 0, "y": 0, "rotate": 0 }, { "t": 0.2, "x": -7, "y": -16, "rotate": -10 }, { "t": 0.4, "x": 9, "y": 7, "rotate": 5 }, { "t": 0.6, "x": -3, "y": -12, "rotate": -7 }, { "t": 0.8, "x": 11, "y": 3, "rotate": 9 }, { "t": 1, "x": 0, "y": 0, "rotate": 0 } ] },
@@ -281,6 +289,7 @@
     },
     "face-wink": {
       "duration": 3000,
+      "mood": "wink",
       "loop": true,
       "tracks": [
         { "part": "L-eye-whites", "easing": "easeInOut", "keyframes": [ { "t": 0, "scaleY": 1 }, { "t": 0.4, "scaleY": 1 }, { "t": 0.5, "scaleY": 0.05 }, { "t": 0.6, "scaleY": 1 }, { "t": 1, "scaleY": 1 } ] },
@@ -291,6 +300,7 @@
     },
     "face-sleepy": {
       "duration": 4000,
+      "mood": "sleepy",
       "mouthViseme": "X",
       "loop": true,
       "tracks": [
@@ -305,6 +315,7 @@
     },
     "face-scared": {
       "duration": 1800,
+      "mood": "scared",
       "loop": true,
       "tracks": [
         { "part": "L-eye-whites", "easing": "easeInOut", "keyframes": [ { "t": 0, "scale": 1 }, { "t": 0.5, "scale": 1.25 }, { "t": 1, "scale": 1 } ] },
@@ -318,6 +329,7 @@
     },
     "face-roll-eyes": {
       "duration": 3000,
+      "mood": "eye_roll",
       "loop": true,
       "tracks": [
         { "part": "L-eye-whites", "easing": "easeInOut", "keyframes": [ { "t": 0, "x": 0, "y": 0 }, { "t": 0.2, "x": 0, "y": 0 }, { "t": 0.4, "x": -2, "y": -8 }, { "t": 0.6, "x": -2, "y": -8 }, { "t": 0.8, "x": 0, "y": 0 }, { "t": 1, "x": 0, "y": 0 } ] },
@@ -329,6 +341,7 @@
     },
     "face-big-eyes": {
       "duration": 2500,
+      "mood": "wide_eyed",
       "loop": true,
       "tracks": [
         { "part": "L-eye-whites", "easing": "easeInOut", "keyframes": [ { "t": 0, "scale": 1 }, { "t": 0.5, "scale": 1.3 }, { "t": 1, "scale": 1 } ] },
@@ -342,6 +355,7 @@
     },
     "face-unimpressed": {
       "duration": 3500,
+      "mood": "unimpressed",
       "loop": true,
       "tracks": [
         { "part": "L-eye-whites", "easing": "easeInOut", "keyframes": [ { "t": 0, "scaleY": 1 }, { "t": 0.5, "scaleY": 0.25 }, { "t": 1, "scaleY": 1 } ] },
@@ -353,6 +367,7 @@
     },
     "face-idle-grin": {
       "duration": 1,
+      "mood": "happy",
       "mouthViseme": "E",
       "loop": true,
       "tracks": [],
@@ -360,6 +375,7 @@
     },
     "face-bored": {
       "duration": 5000,
+      "mood": "bored",
       "mouthViseme": "X",
       "loop": true,
       "tracks": [
@@ -374,6 +390,7 @@
     },
     "face-thinking": {
       "duration": 3500,
+      "mood": "thinking",
       "loop": true,
       "tracks": [
         { "part": "L-eye-whites", "easing": "easeInOut", "keyframes": [ { "t": 0, "x": 0, "y": 0 }, { "t": 0.5, "x": 5, "y": -5 }, { "t": 1, "x": 0, "y": 0 } ] },
@@ -387,6 +404,7 @@
     },
     "face-confused": {
       "duration": 3000,
+      "mood": "confused",
       "loop": true,
       "tracks": [
         { "part": "L-brow", "easing": "easeInOut", "keyframes": [ { "t": 0, "x": 0, "y": 0, "rotate": 0 }, { "t": 0.5, "x": -4, "y": -12, "rotate": -8 }, { "t": 1, "x": 0, "y": 0, "rotate": 0 } ] },
@@ -400,6 +418,7 @@
     },
     "face-smug": {
       "duration": 3000,
+      "mood": "smug",
       "loop": true,
       "tracks": [
         { "part": "L-brow", "easing": "easeInOut", "keyframes": [ { "t": 0, "y": 0, "rotate": 0 }, { "t": 0.5, "y": -10, "rotate": -8 }, { "t": 1, "y": 0, "rotate": 0 } ] },
@@ -413,6 +432,7 @@
     },
     "face-side-eye": {
       "duration": 4000,
+      "mood": "side_eye",
       "loop": true,
       "tracks": [
         { "part": "L-eye-whites", "easing": "easeInOut", "keyframes": [ { "t": 0, "x": 0 }, { "t": 0.15, "x": 0 }, { "t": 0.25, "x": -8 }, { "t": 0.55, "x": -8 }, { "t": 0.65, "x": 0 }, { "t": 1, "x": 0 } ] },
@@ -424,6 +444,7 @@
     },
     "face-cry": {
       "duration": 2500,
+      "mood": "crying",
       "loop": true,
       "tracks": [
         { "part": "L-brow", "easing": "easeInOut", "keyframes": [ { "t": 0, "x": 0, "y": 0, "rotate": 0 }, { "t": 0.5, "x": 8, "y": 10, "rotate": 12 }, { "t": 1, "x": 0, "y": 0, "rotate": 0 } ] },
@@ -437,6 +458,7 @@
     },
     "face-shifty": {
       "duration": 1800,
+      "mood": "shifty",
       "loop": true,
       "tracks": [
         { "part": "L-eye-whites", "easing": "easeInOut", "keyframes": [ { "t": 0, "x": 0 }, { "t": 0.1, "x": -6 }, { "t": 0.2, "x": 0 }, { "t": 0.5, "x": 6 }, { "t": 0.7, "x": 0 }, { "t": 1, "x": 0 } ] },
@@ -448,6 +470,7 @@
     },
     "face-pout": {
       "duration": 3000,
+      "mood": "sad",
       "loop": true,
       "tracks": [
         { "part": "L-brow", "easing": "easeInOut", "keyframes": [ { "t": 0, "x": 0, "y": 0, "rotate": 0 }, { "t": 0.5, "x": 4, "y": 5, "rotate": -3 }, { "t": 1, "x": 0, "y": 0, "rotate": 0 } ] },
@@ -477,6 +500,7 @@
     },
     "face-grumpy": {
       "duration": 2200,
+      "mood": "grumpy",
       "loop": true,
       "tracks": [
         { "part": "L-brow", "easing": "easeInOut", "keyframes": [ { "t": 0, "x": 0, "y": 0, "rotate": 0 }, { "t": 0.5, "x": 10, "y": 18, "rotate": 14 }, { "t": 1, "x": 0, "y": 0, "rotate": 0 } ] },
@@ -490,6 +514,7 @@
     },
     "face-flirty": {
       "duration": 3000,
+      "mood": "flirty",
       "loop": true,
       "tracks": [
         { "part": "L-eye-whites", "easing": "easeInOut", "keyframes": [ { "t": 0, "scaleY": 1 }, { "t": 0.5, "scaleY": 0.45 }, { "t": 1, "scaleY": 1 } ] },
@@ -501,6 +526,7 @@
     },
     "face-excited": {
       "duration": 600,
+      "mood": "excited",
       "loop": true,
       "tracks": [
         { "part": "L-brow", "easing": "easeInOut", "keyframes": [ { "t": 0, "y": 0 }, { "t": 0.25, "y": -12 }, { "t": 0.75, "y": -12 }, { "t": 1, "y": 0 } ] },
@@ -514,6 +540,7 @@
     },
     "face-crossed": {
       "duration": 2500,
+      "mood": "cross_eyed",
       "loop": true,
       "tracks": [
         { "part": "L-eye-whites", "easing": "easeInOut", "keyframes": [ { "t": 0, "x": 0 }, { "t": 0.5, "x": 7 }, { "t": 1, "x": 0 } ] },
@@ -525,6 +552,7 @@
     },
     "face-intense": {
       "duration": 1600,
+      "mood": "intense",
       "loop": true,
       "tracks": [
         { "part": "L-brow", "easing": "easeInOut", "keyframes": [ { "t": 0, "x": 0, "y": 0, "rotate": 0 }, { "t": 0.5, "x": 6, "y": 10, "rotate": 6 }, { "t": 1, "x": 0, "y": 0, "rotate": 0 } ] },
@@ -536,6 +564,7 @@
     },
     "face-daydream": {
       "duration": 6000,
+      "mood": "dreamy",
       "loop": true,
       "tracks": [
         { "part": "L-eye-whites", "easing": "easeInOut", "keyframes": [ { "t": 0, "x": 0, "y": 0 }, { "t": 0.2, "x": 3, "y": -4 }, { "t": 0.4, "x": -2, "y": -5 }, { "t": 0.6, "x": 4, "y": -2 }, { "t": 0.8, "x": -3, "y": -3 }, { "t": 1, "x": 0, "y": 0 } ] },
@@ -549,6 +578,7 @@
     },
     "face-mischief": {
       "duration": 2500,
+      "mood": "mischief",
       "loop": true,
       "tracks": [
         { "part": "L-brow", "easing": "easeInOut", "keyframes": [ { "t": 0, "x": 0, "y": 0, "rotate": 0 }, { "t": 0.5, "x": 5, "y": 8, "rotate": 10 }, { "t": 1, "x": 0, "y": 0, "rotate": 0 } ] },
@@ -562,6 +592,7 @@
     },
     "face-eyelash-flutter": {
       "duration": 900,
+      "mood": "flutter",
       "loop": true,
       "tracks": [
         { "part": "L-eye-whites", "easing": "easeInOut", "keyframes": [ { "t": 0, "scaleY": 1 }, { "t": 0.04, "scaleY": 0.05 }, { "t": 0.08, "scaleY": 1 }, { "t": 1, "scaleY": 1 } ] },
@@ -573,6 +604,7 @@
     },
     "face-dead-eyes": {
       "duration": 3000,
+      "mood": "dead_eyes",
       "loop": true,
       "tracks": [
         { "part": "L-eye-whites", "easing": "easeInOut", "keyframes": [ { "t": 0, "scaleY": 1 }, { "t": 0.5, "scaleY": 0.4 }, { "t": 1, "scaleY": 1 } ] },
@@ -679,5 +711,35 @@
     "FINISHED": { "body": { "loop": "body-victory-dance" }, "face": { "pool": "success-faces" }, "autoReturn": { "to": "IDLE", "afterMs": 2000 } },
     "ERROR": { "body": { "loop": "body-mocking-wobble" }, "face": { "pool": "error-faces" }, "autoReturn": { "to": "IDLE", "afterMs": 3000 } }
   },
+  "mood": {
+    "bands": [
+      { "name": "alert",     "when": { "attention": { "min": 0.7 } } },
+      { "name": "low",       "when": { "valence":   { "below": 0.35 } } },
+      { "name": "energetic", "when": { "energy":    { "min": 0.7 } } },
+      { "name": "calm",      "when": {} }
+    ],
+    "weights": {
+      "low":       { "face-sleepy": 3, "face-bored": 2, "face-confused": 2 },
+      "energetic": { "face-wink": 2, "face-smug": 2, "face-side-eye": 2 },
+      "alert":     { "face-thinking": 3, "face-side-eye": 2 },
+      "calm":      {}
+    },
+    "note": "Bands are evaluated in listed order on the mood vector {energy, valence, bond, attention} (min inclusive, below exclusive); the first match wins and the last, with an empty when, always matches. A band's weights are integer multipliers on a pool item's weight for that clip; unlisted clips keep their weight. Without a mood (no Ogrelord band) the band is calm."
+  },
+  "schedule": { "epochMs": 300000, "prng": "mulberry32", "seed": "fnv1a32", "defaultHoldMs": [4000, 6000], "note": "The deterministic shared face schedule (section 13.3): seed = fnv1a32(key|state|band|epochIndex) over UTF-8 bytes, epochIndex = floor(nowMs / epochMs); mulberry32 draws r1 (weighted pick, floor(r1 * total) walked over the eligible items in listed order) then r2 (hold = min + floor(r2 * (max - min + 1))) per entry until the holds reach epochMs. defaultHoldMs is the [min, max] hold for a pool state that declares no face.holdMs. Reference implementation: ogrebuddy/ogre-animator.js OgreAnimator.scheduleSequence; conformance fixture tools/schedule-golden.json." },
+  "reactions": {
+    "cart.succeeded":  { "face": "face-excited",  "body": "body-victory-dance", "priority": 100, "holdMs": 2000, "expiresMs": 5000, "source": "ogrelord" },
+    "letter.arrived":  { "face": "face-big-eyes", "body": "body-entry-pop",     "priority": 80,  "holdMs": 1500, "source": "ogrebrain" },
+    "letter.opened":   { "face": "payload", "body": "payload",                   "priority": 80,  "holdMs": 3000, "source": "client", "note": "the letter's own clip pair" },
+    "greeting.warm":   { "pool": "greeting-warm-faces",    "priority": 60, "holdMs": 1800, "source": "client" },
+    "greeting.bright": { "pool": "greeting-bright-faces",  "priority": 60, "holdMs": 1800, "source": "client" },
+    "greeting.radiant":{ "pool": "greeting-radiant-faces", "priority": 60, "holdMs": 1800, "source": "client" },
+    "schedule.fired":  { "face": "face-surprised", "body": "body-task-pulse",   "priority": 70,  "holdMs": 2000, "source": "ogrebrain" },
+    "pomodoro.focus":  { "face": "face-intense",                                "priority": 50,  "holdMs": 2500, "source": "ogrebrain" },
+    "pomodoro.break":  { "face": "face-daydream", "body": "body-breathe",       "priority": 50,  "holdMs": 2500, "source": "ogrebrain" },
+    "error":           { "pool": "error-faces",   "body": "body-mocking-wobble","priority": 90,  "holdMs": 3000, "source": "client" },
+    "offline":         { "face": "face-dead-eyes",                              "priority": 40,  "holdMs": 0,    "source": "client" }
+  },
+  "blink": { "everyMs": [3000, 6000], "durationMs": 120, "renderers": ["pixel", "robot"], "note": "Timing shared, art per costume (the pixel skin's blink layer, the robot's lid layer). The browser joins when lid art replaces the placeholders: add \"browser\" and a face-blink clip." },
   "reducedMotionDefaults": { "mode": "pose", "allow": [] }
 }
