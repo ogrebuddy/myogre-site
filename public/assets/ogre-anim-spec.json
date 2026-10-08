@@ -1,7 +1,7 @@
 {
   "meta": {
     "schemaVersion": 1,
-    "specVersion": "0.6.1",
+    "specVersion": "0.7.0",
     "generator": "batch1-transcription",
     "reference": { "width": 469.83, "height": 474.51, "units": "svg-user-units" },
     "blendMs": 150,
@@ -224,6 +224,7 @@
     "face-dizzy": {
       "duration": 1200,
       "mood": "dizzy",
+      "eyeTracking": false,
       "mouthViseme": "F",
       "loop": true,
       "tracks": [
@@ -249,6 +250,7 @@
     "face-surprised": {
       "duration": 2000,
       "mood": "surprised",
+      "eyeTracking": false,
       "mouthViseme": "D",
       "loop": true,
       "tracks": [
@@ -264,6 +266,7 @@
     "face-hypno": {
       "duration": 2000,
       "mood": "hypno",
+      "eyeTracking": false,
       "loop": true,
       "tracks": [
         { "part": "L-pupil", "easing": "linear", "keyframes": [ { "t": 0, "x": 0, "y": -5 }, { "t": 0.25, "x": 5, "y": 0 }, { "t": 0.5, "x": 0, "y": 5 }, { "t": 0.75, "x": -5, "y": 0 }, { "t": 1, "x": 0, "y": -5 } ] },
@@ -276,6 +279,7 @@
     "face-wild": {
       "duration": 1400,
       "mood": "silly",
+      "eyeTracking": false,
       "loop": true,
       "tracks": [
         { "part": "L-brow", "easing": "easeInOut", "keyframes": [ { "t": 0, "x": 0, "y": 0, "rotate": 0 }, { "t": 0.2, "x": -7, "y": -16, "rotate": -10 }, { "t": 0.4, "x": 9, "y": 7, "rotate": 5 }, { "t": 0.6, "x": -3, "y": -12, "rotate": -7 }, { "t": 0.8, "x": 11, "y": 3, "rotate": 9 }, { "t": 1, "x": 0, "y": 0, "rotate": 0 } ] },
@@ -301,6 +305,7 @@
     "face-sleepy": {
       "duration": 4000,
       "mood": "sleepy",
+      "eyeTracking": false,
       "mouthViseme": "X",
       "loop": true,
       "tracks": [
@@ -316,6 +321,7 @@
     "face-scared": {
       "duration": 1800,
       "mood": "scared",
+      "eyeTracking": false,
       "loop": true,
       "tracks": [
         { "part": "L-eye-whites", "easing": "easeInOut", "keyframes": [ { "t": 0, "scale": 1 }, { "t": 0.5, "scale": 1.25 }, { "t": 1, "scale": 1 } ] },
@@ -330,6 +336,7 @@
     "face-roll-eyes": {
       "duration": 3000,
       "mood": "eye_roll",
+      "eyeTracking": false,
       "loop": true,
       "tracks": [
         { "part": "L-eye-whites", "easing": "easeInOut", "keyframes": [ { "t": 0, "x": 0, "y": 0 }, { "t": 0.2, "x": 0, "y": 0 }, { "t": 0.4, "x": -2, "y": -8 }, { "t": 0.6, "x": -2, "y": -8 }, { "t": 0.8, "x": 0, "y": 0 }, { "t": 1, "x": 0, "y": 0 } ] },
@@ -342,6 +349,7 @@
     "face-big-eyes": {
       "duration": 2500,
       "mood": "wide_eyed",
+      "eyeTracking": false,
       "loop": true,
       "tracks": [
         { "part": "L-eye-whites", "easing": "easeInOut", "keyframes": [ { "t": 0, "scale": 1 }, { "t": 0.5, "scale": 1.3 }, { "t": 1, "scale": 1 } ] },
@@ -445,6 +453,7 @@
     "face-cry": {
       "duration": 2500,
       "mood": "crying",
+      "eyeTracking": false,
       "loop": true,
       "tracks": [
         { "part": "L-brow", "easing": "easeInOut", "keyframes": [ { "t": 0, "x": 0, "y": 0, "rotate": 0 }, { "t": 0.5, "x": 8, "y": 10, "rotate": 12 }, { "t": 1, "x": 0, "y": 0, "rotate": 0 } ] },
@@ -741,6 +750,7 @@
     "offline":         { "face": "face-dead-eyes",                              "priority": 40,  "holdMs": 0,    "source": "client" }
   },
   "blink": { "everyMs": [3000, 6000], "durationMs": 120, "renderers": ["pixel", "robot"], "note": "Timing shared, art per costume (the pixel skin's blink layer, the robot's lid layer). The browser joins when lid art replaces the placeholders: add \"browser\" and a face-blink clip." },
+  "eyeTracking": { "maxTravel": 6, "reachPx": 120, "note": "Pupils follow the pointer on renderers that have one. maxTravel is the furthest a pupil moves from home, in artwork units (meta.reference); reachPx is how far the pointer is from the eye, in screen px, when it gets there. A clip with eyeTracking false owns the pupils: tracking pauses and the pupils go home while it plays. OgreAnimator.trackEyes is the browser's implementation." },
   "costumes": {
     "drawn": {
       "name": "The drawn face", "kind": "rig", "art": "full-ogre.svg",
@@ -817,5 +827,12 @@
       "renderers": ["browser", "robot"], "apps": ["Ogrebuddy", "Ogrebite", "Ogrebrain", "Ogrechan"]
     }
   },
+  "gestures": { "nod": {}, "shake": {}, "centre": {}, "wiggle": {}, "bob": {}, "perk": {}, "droop": {}, "shrug": {}, "sway": {}, "look_around": {},
+                "double_take_left": {}, "double_take_right": {}, "peek_left": {}, "peek_right": {}, "spin_left": {}, "spin_right": {} },
+  "energy": [
+    { "level": 1, "name": "calm",   "everyMs": 5000, "gestures": ["nod", "perk", "sway"] },
+    { "level": 2, "name": "lively", "everyMs": 3000, "gestures": ["nod", "perk", "sway", "bob", "wiggle", "shrug", "look_around"] },
+    { "level": 3, "name": "wild",   "everyMs": 2000, "gestures": ["nod", "perk", "sway", "bob", "wiggle", "shrug", "look_around", "double_take_left", "double_take_right", "peek_left", "peek_right"] }
+  ],
   "reducedMotionDefaults": { "mode": "pose", "allow": [] }
 }

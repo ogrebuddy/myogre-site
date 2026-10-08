@@ -403,6 +403,144 @@
     return true;
   }
 
+  // ---- Gestures and energy (spec 0.7.0, section 15.2) ----
+  // The vocabulary of a line's `gesture` and `energy`. A gesture is a semantic
+  // move with no angles: a body with a head maps it to its own motion, and the
+  // animator plays none (no browser face moves a head). gestureNames lists them
+  // in spec order; energyLevel returns a copy of a level's entry
+  // ({ level, name, everyMs, gestures }), or null for 0 and any unknown level.
+  function gestureNames(spec) {
+    return spec && isObject(spec.gestures) ? Object.keys(spec.gestures) : [];
+  }
+  function energyLevel(spec, level) {
+    var entries = spec && Array.isArray(spec.energy) ? spec.energy : [];
+    for (var i = 0; i < entries.length; i += 1) if (isObject(entries[i]) && entries[i].level === level) return clone(entries[i]);
+    return null;
+  }
+
+  // ---- Eye tracking (spec 0.7.0) ----
+  // The pupils follow the pointer, for any host and any number of faces on a
+  // page: one document mousemove listener and one requestAnimationFrame loop
+  // serve every tracked face. Each face is a copy of the rig under its own
+  // svgRoot (the <svg> itself), and everything is looked up inside that root.
+  // Tracking moves the INNER group of L-pupil / R-pupil (the outer group when
+  // there is no inner one), so it composes with a face clip animating the outer
+  // group, and art inside the inner group (the kawaii hearts) follows too.
+  // Travel is in artwork units: the spec's eyeTracking.maxTravel, reached when
+  // the pointer is eyeTracking.reachPx screen px from the eye. A pupil's home
+  // is its dot's cx / cy in the art.
+  // A face is at home, not tracking, while: no mousemove has arrived yet (so a
+  // touch device never moves it); the root has no size (not displayed); motion
+  // is reduced (the animator's own decision when one is given, else the media
+  // query); or the given animator is playing a clip whose eyeTracking is false,
+  // in any group, reactions included.
+  //   var eyes = OgreAnimator.trackEyes(svgRoot, { spec: compiledSpec, animator: animator });
+  //   eyes.stop();
+  // Both options are optional. Call it right after constructing the animator:
+  // it learns the playing clip from clipstart / clipend / statechange.
+  var EYE_DEFAULTS = { maxTravel: 6, reachPx: 120, width: 469.83, height: 474.51, L: { cx: 127.77, cy: 252.38 }, R: { cx: 351.45, cy: 231.75 } };
+  var eyeTrackers = [];
+  var eyePointer = { x: 0, y: 0, seen: false };
+  var eyeFrame = null;
+  var eyeListening = false;
+  var eyeMql = null;
+  function eyeOnMove(evt) { eyePointer.x = evt.clientX; eyePointer.y = evt.clientY; eyePointer.seen = true; }
+  function eyeQuery(root, selector) {
+    try { return root.querySelector(selector) || null; } catch (err) { return null; }
+  }
+  function eyeBuild(root, side) {
+    var el = eyeQuery(root, '[id="' + side + '-pupil"] > g') || eyeQuery(root, '[id="' + side + '-pupil"]');
+    var dot = eyeQuery(root, '[id="' + side + '-pupil-dot"]');
+    var cx = dot && typeof dot.getAttribute === 'function' ? parseFloat(dot.getAttribute('cx')) : NaN;
+    var cy = dot && typeof dot.getAttribute === 'function' ? parseFloat(dot.getAttribute('cy')) : NaN;
+    // x / y: the offset last written, in hundredths of an artwork unit.
+    return { el: el && typeof el.setAttribute === 'function' ? el : null, cx: isFinite(cx) ? cx : EYE_DEFAULTS[side].cx, cy: isFinite(cy) ? cy : EYE_DEFAULTS[side].cy, x: 0, y: 0 };
+  }
+  function eyeSet(eye, dx, dy) {
+    var x = Math.round(dx * 100), y = Math.round(dy * 100);
+    if (!eye.el || (eye.x === x && eye.y === y)) return;
+    eye.x = x; eye.y = y;
+    try { eye.el.setAttribute('transform', 'translate(' + (x / 100).toFixed(2) + ' ' + (y / 100).toFixed(2) + ')'); } catch (err) {}
+  }
+  function eyeAim(tracker, eye, rect) {
+    var dx = eyePointer.x - (rect.left + (eye.cx / tracker.width) * rect.width);
+    var dy = eyePointer.y - (rect.top + (eye.cy / tracker.height) * rect.height);
+    var dist = Math.sqrt(dx * dx + dy * dy) || 1;
+    var mag = Math.min(dist / tracker.reachPx, 1) * tracker.maxTravel;
+    eyeSet(eye, (dx / dist) * mag, (dy / dist) * mag);
+  }
+  function eyeHome(tracker) { eyeSet(tracker.left, 0, 0); eyeSet(tracker.right, 0, 0); }
+  // A clip that owns the pupils is recognised by the clip, whatever group it
+  // plays in. The reaction group's slot only counts while a reaction is live:
+  // a reaction ends by cancelling its group, which emits nothing.
+  function eyeOwned(tracker) {
+    var slots = tracker.slots, clips = tracker.clips;
+    for (var group in slots) {
+      var name = slots[group];
+      if (name === null) continue;
+      if (group === REACTION_GROUP && !tracker.animator.activeReaction) { slots[group] = null; continue; }
+      if (clips[name] && clips[name].eyeTracking === false) return true;
+    }
+    return false;
+  }
+  function eyeUpdate(tracker) {
+    var reduced = tracker.animator ? !!tracker.animator._reducedMotion : !!(eyeMql && eyeMql.matches);
+    if (!eyePointer.seen || reduced || (tracker.animator && eyeOwned(tracker))) { eyeHome(tracker); return; }
+    var rect = null;
+    try { rect = tracker.root.getBoundingClientRect(); } catch (err) { rect = null; }
+    if (!rect || !rect.width || !rect.height) { eyeHome(tracker); return; }
+    eyeAim(tracker, tracker.left, rect);
+    eyeAim(tracker, tracker.right, rect);
+  }
+  function eyeTick() {
+    for (var i = 0; i < eyeTrackers.length; i += 1) eyeUpdate(eyeTrackers[i]);
+    eyeFrame = eyeTrackers.length ? window.requestAnimationFrame(eyeTick) : null;
+  }
+  function trackEyes(svgRoot, options) {
+    options = options || {};
+    var animator = options.animator && typeof options.animator.on === 'function' ? options.animator : null;
+    var spec = (animator && animator.spec) || options.spec || {};
+    var section = isObject(spec.eyeTracking) ? spec.eyeTracking : {};
+    var reference = (spec.meta && spec.meta.reference) || {};
+    var inert = { stop: function () {} };
+    if (!svgRoot || typeof svgRoot.querySelector !== 'function') return inert;
+    if (typeof window === 'undefined' || typeof document === 'undefined' || typeof window.requestAnimationFrame !== 'function') return inert;
+    var tracker = {
+      root: svgRoot, animator: animator, clips: spec.clips || {}, slots: {},
+      maxTravel: numberOr(section.maxTravel, EYE_DEFAULTS.maxTravel), reachPx: numberOr(section.reachPx, EYE_DEFAULTS.reachPx) || EYE_DEFAULTS.reachPx,
+      width: numberOr(reference.width, EYE_DEFAULTS.width) || EYE_DEFAULTS.width, height: numberOr(reference.height, EYE_DEFAULTS.height) || EYE_DEFAULTS.height,
+      left: eyeBuild(svgRoot, 'L'), right: eyeBuild(svgRoot, 'R')
+    };
+    function onClipStart(evt) { if (evt && typeof evt.name === 'string' && evt.name.indexOf('face-') === 0) tracker.slots[evt.group] = evt.name; }
+    function onClipEnd(evt) { if (evt && !evt.loop && tracker.slots[evt.group] === evt.name) tracker.slots[evt.group] = null; }
+    function onStateChange() { for (var group in tracker.slots) if (group !== REACTION_GROUP) tracker.slots[group] = null; }
+    if (animator) { animator.on('clipstart', onClipStart); animator.on('clipend', onClipEnd); animator.on('statechange', onStateChange); }
+    eyeTrackers.push(tracker);
+    if (!eyeListening) {
+      document.addEventListener('mousemove', eyeOnMove, { passive: true });
+      eyeListening = true;
+      if (!eyeMql && window.matchMedia) eyeMql = window.matchMedia('(prefers-reduced-motion: reduce)');
+    }
+    if (eyeFrame === null) eyeFrame = window.requestAnimationFrame(eyeTick);
+    var stopped = false;
+    return {
+      stop: function () {
+        if (stopped) return;
+        stopped = true;
+        if (animator && typeof animator.off === 'function') { animator.off('clipstart', onClipStart); animator.off('clipend', onClipEnd); animator.off('statechange', onStateChange); }
+        var index = eyeTrackers.indexOf(tracker);
+        if (index !== -1) eyeTrackers.splice(index, 1);
+        eyeHome(tracker);
+        if (eyeTrackers.length) return;
+        document.removeEventListener('mousemove', eyeOnMove, { passive: true });
+        eyeListening = false;
+        eyePointer.seen = false;
+        if (eyeFrame !== null && typeof window.cancelAnimationFrame === 'function') window.cancelAnimationFrame(eyeFrame);
+        eyeFrame = null;
+      }
+    };
+  }
+
   function validateSpec(spec) {
     var problems = [];
     if (!isObject(spec)) problems.push('spec must be an object');
@@ -465,6 +603,7 @@
     var moodOwner = {};
     Object.keys(clips).forEach(function (name) {
       var clip = clips[name];
+      if (clip && hasOwn(clip, 'eyeTracking') && typeof clip.eyeTracking !== 'boolean') problems.push('clip "' + name + '" eyeTracking must be a boolean');
       if (!clip || !hasOwn(clip, 'mood')) return;
       if (typeof clip.mood !== 'string' || !MOOD_NAME.test(clip.mood)) { problems.push('clip "' + name + '" mood ' + JSON.stringify(clip.mood) + ' is not a lowercase [a-z_]+ name'); return; }
       if (moodOwner[clip.mood]) problems.push('clip "' + name + '" mood "' + clip.mood + '" duplicates clip "' + moodOwner[clip.mood] + '"');
@@ -597,14 +736,48 @@
         });
       });
     }
+    // Spec 0.7.0 (section 15.2). Both sections are optional.
+    if (hasOwn(spec, 'gestures')) {
+      if (!isObject(spec.gestures)) problems.push('gestures must be an object');
+      else Object.keys(spec.gestures).forEach(function (name) {
+        if (!/^[a-z][a-z0-9_]{0,23}$/.test(name)) problems.push('gesture "' + name + '" is not a lowercase [a-z][a-z0-9_]{0,23} name');
+        if (!isObject(spec.gestures[name])) problems.push('gesture "' + name + '" must be an object');
+      });
+    }
+    if (hasOwn(spec, 'energy')) {
+      if (!Array.isArray(spec.energy)) problems.push('energy must be an array');
+      else {
+        var knownGestures = isObject(spec.gestures) ? spec.gestures : {};
+        var seenLevels = {};
+        spec.energy.forEach(function (entry, index) {
+          var where = 'energy[' + index + ']';
+          if (!isObject(entry)) { problems.push(where + ' must be an object'); return; }
+          if (typeof entry.level !== 'number' || Math.floor(entry.level) !== entry.level || entry.level < 1 || entry.level > 3) problems.push(where + ' level must be an integer from 1 to 3');
+          else if (seenLevels[entry.level]) problems.push(where + ' duplicates level ' + entry.level);
+          else seenLevels[entry.level] = true;
+          if (typeof entry.name !== 'string' || !entry.name) problems.push(where + ' name must be a non-empty string');
+          if (typeof entry.everyMs !== 'number' || Math.floor(entry.everyMs) !== entry.everyMs || entry.everyMs < 250) problems.push(where + ' everyMs must be an integer >= 250');
+          if (!Array.isArray(entry.gestures) || !entry.gestures.length) problems.push(where + ' gestures must be a non-empty array of gesture names');
+          else entry.gestures.forEach(function (ref) { if (typeof ref !== 'string' || !hasOwn(knownGestures, ref)) problems.push(where + ' unknown gesture ref ' + JSON.stringify(ref)); });
+        });
+      }
+    }
+    // Spec 0.7.0: eye tracking. The section is optional, and so is a clip's flag (checked with the clips above).
+    if (hasOwn(spec, 'eyeTracking')) {
+      if (!isObject(spec.eyeTracking)) problems.push('eyeTracking must be an object');
+      else ['maxTravel', 'reachPx'].forEach(function (key) {
+        var value = spec.eyeTracking[key];
+        if (typeof value !== 'number' || !isFinite(value) || !(value > 0)) problems.push('eyeTracking.' + key + ' must be a positive number');
+      });
+    }
     if (problems.length) throw new Error('Invalid ogre animation spec:\n- ' + problems.join('\n- '));
     return true;
   }
   function compileSpec(spec) {
-    var compiled = { meta: clone(spec.meta || {}), rig: clone(spec.rig || {}), clips: {}, pools: clone(spec.pools || {}), sequences: clone(spec.sequences || {}), oneshots: clone(spec.oneshots || {}), states: clone(spec.states || {}), reducedMotionDefaults: clone(spec.reducedMotionDefaults || {}), mood: isObject(spec.mood) ? clone(spec.mood) : null, schedule: isObject(spec.schedule) ? clone(spec.schedule) : null, reactions: clone(spec.reactions || {}), blink: isObject(spec.blink) ? clone(spec.blink) : null, costumes: clone(spec.costumes || {}), decorations: clone(spec.decorations || {}) };
+    var compiled = { meta: clone(spec.meta || {}), rig: clone(spec.rig || {}), clips: {}, pools: clone(spec.pools || {}), sequences: clone(spec.sequences || {}), oneshots: clone(spec.oneshots || {}), states: clone(spec.states || {}), reducedMotionDefaults: clone(spec.reducedMotionDefaults || {}), mood: isObject(spec.mood) ? clone(spec.mood) : null, schedule: isObject(spec.schedule) ? clone(spec.schedule) : null, reactions: clone(spec.reactions || {}), blink: isObject(spec.blink) ? clone(spec.blink) : null, costumes: clone(spec.costumes || {}), decorations: clone(spec.decorations || {}), gestures: clone(spec.gestures || {}), energy: clone(spec.energy || []), eyeTracking: isObject(spec.eyeTracking) ? clone(spec.eyeTracking) : null };
     Object.keys(spec.clips || {}).forEach(function (name) {
       var clip = spec.clips[name];
-      var out = { name: name, duration: clip.duration, loop: clip.loop === true, meta: clone(clip.meta || {}), mouthViseme: clip.mouthViseme || null, mood: typeof clip.mood === 'string' ? clip.mood : null, tracks: asArray(clip.tracks).map(function (track) { return compileTrack(clip, track); }) };
+      var out = { name: name, duration: clip.duration, loop: clip.loop === true, meta: clone(clip.meta || {}), mouthViseme: clip.mouthViseme || null, mood: typeof clip.mood === 'string' ? clip.mood : null, eyeTracking: clip.eyeTracking !== false, tracks: asArray(clip.tracks).map(function (track) { return compileTrack(clip, track); }) };
       out.parts = getClipParts(out);
       compiled.clips[name] = out;
     });
@@ -1242,6 +1415,11 @@
   // Costumes and decorations (14.1, 14.3): one resolver and one switch for every host.
   OgreAnimator.costumeAnswer = costumeAnswer;
   OgreAnimator.decorate = decorate;
+  // Gestures and energy (15.2): the names a line may use. Read, never played here.
+  OgreAnimator.gestureNames = gestureNames;
+  OgreAnimator.energyLevel = energyLevel;
+  // Eye tracking: the pupils follow the pointer on any host's copy of the rig.
+  OgreAnimator.trackEyes = trackEyes;
 
   if (typeof window !== 'undefined') window.OgreAnimator = OgreAnimator;
   if (typeof module !== 'undefined' && module.exports) module.exports = OgreAnimator;
