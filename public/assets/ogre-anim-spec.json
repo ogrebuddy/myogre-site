@@ -1,7 +1,7 @@
 {
   "meta": {
     "schemaVersion": 1,
-    "specVersion": "0.6.0",
+    "specVersion": "0.6.1",
     "generator": "batch1-transcription",
     "reference": { "width": 469.83, "height": 474.51, "units": "svg-user-units" },
     "blendMs": 150,
@@ -814,7 +814,7 @@
       "name": "Kawaii hearts and blush",
       "show": ["FX-blush", "L-pupil-heart", "R-pupil-heart"],
       "hide": ["L-pupil-dot", "R-pupil-dot"],
-      "renderers": ["browser"], "apps": ["Ogrebuddy", "Ogrebite"]
+      "renderers": ["browser", "robot"], "apps": ["Ogrebuddy", "Ogrebite", "Ogrebrain", "Ogrechan"]
     }
   },
   "reducedMotionDefaults": { "mode": "pose", "allow": [] }
