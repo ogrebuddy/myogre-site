@@ -693,6 +693,16 @@
           if (hasOwn(kf, 'easing')) problems.push(where + ' keyframe ' + kfIndex + ' has its own easing (the track easing shapes every stretch)');
           if (hasOwn(kf, 'visible') && track.part !== 'root' && track.part !== 'svg') problems.push(where + ' keyframe ' + kfIndex + ' sets visible on "' + track.part + '" (only root and svg may)');
         });
+        // A track spans its whole cycle: sampleClip, the robot and MyOgre hold
+        // the first keyframe before its t and the last one after its t, where
+        // the browser eases from and to the part's rest pose.
+        var frames = asArray(track.keyframes);
+        if (frames.length) {
+          var firstT = frames[0] && frames[0].t;
+          var lastT = frames[frames.length - 1] && frames[frames.length - 1].t;
+          if (firstT !== 0) problems.push(where + ' first keyframe must be at t 0 (it is at ' + firstT + ')');
+          if (lastT !== 1) problems.push(where + ' last keyframe must be at t 1 (it is at ' + lastT + ')');
+        }
       });
     });
     Object.keys(pools).forEach(function (name) {
@@ -853,6 +863,13 @@
             if (isObject(target)) checkGlyphSet(target, 'clipMap "' + ref + '"');
             else if (typeof target !== 'string') problems.push('costume "' + name + '" clipMap "' + ref + '" must be a clip name, "rest" or a glyph set');
             else if (target !== 'rest' && !(all ? clipExists(spec, target) : answered.indexOf(target) !== -1)) problems.push('costume "' + name + '" clipMap "' + ref + '" -> "' + target + '" is not a clip the costume answers (or "rest")');
+          });
+        }
+        // Spec 0.8.0: the decorations a costume has art for, by name.
+        if (hasOwn(costume, 'decorations')) {
+          if (!Array.isArray(costume.decorations)) problems.push('costume "' + name + '" decorations must be an array of decoration names');
+          else costume.decorations.forEach(function (ref) {
+            if (typeof ref !== 'string' || !isObject(spec.decorations) || !hasOwn(spec.decorations, ref)) problems.push('costume "' + name + '" decorations unknown decoration ref ' + JSON.stringify(ref));
           });
         }
       });
