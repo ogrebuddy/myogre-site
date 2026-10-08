@@ -10,6 +10,7 @@
     easeInOut: 'ease-in-out'
   };
 
+  var EASING_NAMES = Object.keys(EASING); // the five every player knows
   var PRIORITY = { microlife: 1, face: 2, oneshot: 3, body: 3, pose: 3, scrub: 3 };
   var DEFAULT_BLEND_MS = 150; // used when the spec's meta.blendMs is absent (spec 0.4.0)
   // Spec 0.5.0 (face_parity_brainstorm.md section 13): the shared schedule,
@@ -54,8 +55,6 @@
     var out = { t: numberOr(kf.t, 0), x: numberOr(kf.x, 0), y: numberOr(kf.y, 0), rotate: numberOr(kf.rotate, 0), scaleX: scale.x, scaleY: scale.y };
     if (hasOwn(kf, 'opacity')) out.opacity = Number(kf.opacity);
     if (hasOwn(kf, 'visible')) out.visible = !!kf.visible;
-    var easing = easingToCss(kf.easing);
-    if (easing) out.easing = easing;
     return out;
   }
   function frameToKeyframe(values) {
@@ -152,9 +151,124 @@
     return expanded;
   }
   function compileTrack(clip, track) {
-    var springTrack = hasSpring(track.easing);
     var frames = expandSpringTrack(track).map(frameValues);
-    return { part: track.part, frames: frames, keyframes: frames.map(frameToKeyframe), timing: { duration: clip.duration, delay: track.delay || 0, iterations: clip.loop === true ? Infinity : (clip.loop || 1), easing: springTrack ? 'linear' : (easingToCss(track.easing) || 'linear'), fill: 'both' }, meta: track.meta || null };
+    // The browser follows sampleClip's rule (below) by construction:
+    // - The track's easing shapes each stretch between two keyframes, so it is
+    //   written on every WAAPI keyframe (where it covers the stretch to the
+    //   next one, as a CSS @keyframes timing function does) and the effect's
+    //   own easing, which would shape the whole iteration, stays linear. A
+    //   spring track arrives baked into linear stretches.
+    // - A channel missing on a keyframe is identity. WAAPI would skip a
+    //   keyframe that omits a property and interpolate across it, so a track
+    //   that states opacity anywhere states it on every keyframe.
+    var easing = hasSpring(track.easing) ? null : easingToCss(track.easing);
+    var statesOpacity = frames.some(function (values) { return hasOwn(values, 'opacity'); });
+    frames.forEach(function (values) {
+      if (statesOpacity && !hasOwn(values, 'opacity')) values.opacity = 1;
+      if (easing && easing !== 'linear') values.easing = easing;
+    });
+    return { part: track.part, frames: frames, keyframes: frames.map(frameToKeyframe), timing: { duration: clip.duration, delay: track.delay || 0, iterations: clip.loop === true ? Infinity : (clip.loop || 1), easing: 'linear', fill: 'both' }, meta: track.meta || null };
+  }
+  // ---------------------------------------------------------------------------
+  // The reference pose sampler (face_parity_brainstorm.md section 16.4): what
+  // every player shows for a clip at a moment. The robot's AnimPlayer, MyOgre's
+  // AnimPlayer and this animator's own WAAPI keyframes are all held to it by
+  // tools/pose-golden.json (generated from it by tools/test-animator.js and
+  // mirrored to the other players' tests). Pure: no DOM, no clock, no state.
+  //
+  // THE RULE, per track, for elapsedMs since the clip started (below 0 is 0):
+  //   1. The track's `delay` passes once, before the first iteration. Until
+  //      then the track shows its first keyframe.
+  //   2. A looping clip (loop === true) then repeats with period `duration`:
+  //      local = (elapsed - delay) mod duration. A clip that does not loop
+  //      holds its last keyframe from delay + duration on.
+  //   3. phase = local / duration. Keyframes are taken in order of `t` (equal
+  //      t: listed order). The pose is between the last keyframe with
+  //      t <= phase and the next one; exactly on a keyframe it is that
+  //      keyframe. Before the first keyframe's t the part is at identity; from
+  //      the last keyframe's t on it holds the last keyframe.
+  //   4. The TRACK's easing shapes each stretch between two keyframes: it is
+  //      applied to that stretch's local progress (phase - from.t) / (to.t -
+  //      from.t), never to the whole iteration. Every channel uses the same
+  //      eased amount.
+  //   5. A channel a keyframe does not state is identity there: 0 for x, y and
+  //      rotate, 1 for scaleX, scaleY and opacity. `scale` sets scaleX and
+  //      scaleY; an explicit scaleX or scaleY overrides it.
+  //   6. An easing is one of linear, ease, easeIn, easeOut, easeInOut (the CSS
+  //      control points) or [x1, y1, x2, y2]; the curve is solved for x to
+  //      1e-12 (the contract asks 1e-7; the other players' solvers stop at
+  //      1e-5, well inside the fixture's 0.01).
+  //   7. Nothing is clamped: an easing that overshoots carries every channel
+  //      past its keyframe, opacity included (bite-ogre-blast reaches 1.09). A
+  //      renderer clamps opacity to [0,1] when it draws, as a browser does.
+  // Numbers are in the spec's units (meta.reference); a renderer scales them.
+  // Takes the RAW spec (what validateSpec takes), not a compiled one. Returns
+  // { part: { x, y, rotate, scaleX, scaleY, opacity } } for every part the clip
+  // has a track on (a later track on the same part wins).
+  // ---------------------------------------------------------------------------
+  var POSE_CHANNELS = ['x', 'y', 'rotate', 'scaleX', 'scaleY', 'opacity'];
+  var EASING_CONTROLS = { ease: [0.25, 0.1, 0.25, 1], easeIn: [0.42, 0, 1, 1], easeOut: [0, 0, 0.58, 1], easeInOut: [0.42, 0, 0.58, 1] };
+  function easingControls(easing) {
+    if (typeof easing === 'string') return hasOwn(EASING_CONTROLS, easing) ? EASING_CONTROLS[easing] : null; // linear, or a name validateSpec refuses
+    if (Array.isArray(easing) && easing.length === 4 && easing.every(function (value) { return typeof value === 'number' && isFinite(value); })) return easing;
+    return null;
+  }
+  function bezierCoordinate(t, first, second) { var inverse = 1 - t; return 3 * inverse * inverse * t * first + 3 * inverse * t * t * second + t * t * t; }
+  // y of the unit cubic bezier at x = input. x(t) is monotonic for x1, x2 in
+  // [0,1] (validateSpec holds them there), so bisection always converges.
+  function easedAmount(easing, input) {
+    if (!(input > 0)) return 0;
+    if (input >= 1) return 1;
+    var controls = easingControls(easing);
+    if (!controls || (controls[0] === controls[1] && controls[2] === controls[3])) return input;
+    var low = 0, high = 1, t = input;
+    for (var i = 0; i < 64; i += 1) {
+      var x = bezierCoordinate(t, controls[0], controls[2]);
+      if (Math.abs(x - input) < 1e-12) break;
+      if (x < input) low = t; else high = t;
+      t = (low + high) / 2;
+    }
+    return bezierCoordinate(t, controls[1], controls[3]);
+  }
+  function sampleTrackPose(clip, track, elapsed) {
+    var keyframes = expandSpringTrack(track); // in t order (stable); a spring track arrives baked to linear stretches
+    var pose = { x: 0, y: 0, rotate: 0, scaleX: 1, scaleY: 1, opacity: 1 };
+    if (!keyframes.length) return pose;
+    var duration = clip.duration;
+    var delay = numberOr(track.delay, 0);
+    var local = Math.max(0, elapsed - delay);
+    if (clip.loop === true) { if (elapsed >= delay) local = local % duration; }
+    else if (local > duration) local = duration;
+    var phase = local / duration;
+    var last = keyframes[keyframes.length - 1];
+    if (phase < numberOr(keyframes[0].t, 0)) return pose;
+    var from = last, to = last, amount = 0;
+    if (phase < numberOr(last.t, 0)) {
+      var upper = 1;
+      while (!(phase < numberOr(keyframes[upper].t, 0))) upper += 1;
+      from = keyframes[upper - 1];
+      to = keyframes[upper];
+      var span = numberOr(to.t, 0) - numberOr(from.t, 0);
+      if (span > 0) amount = easedAmount(hasSpring(track.easing) ? 'linear' : track.easing, (phase - numberOr(from.t, 0)) / span);
+    }
+    POSE_CHANNELS.forEach(function (channel) {
+      var a = readKfValue(from, channel);
+      var b = readKfValue(to, channel);
+      pose[channel] = a + (b - a) * amount;
+    });
+    return pose;
+  }
+  function sampleClip(spec, clipName, elapsedMs) {
+    var clip = spec && spec.clips ? spec.clips[clipName] : null;
+    if (!clip) throw new Error('Unknown clip: ' + clipName);
+    var out = {};
+    if (!(clip.duration > 0)) return out;
+    var elapsed = Math.max(0, Number(elapsedMs) || 0);
+    asArray(clip.tracks).forEach(function (track) {
+      if (!track || typeof track.part !== 'string' || !asArray(track.keyframes).length) return;
+      out[track.part] = sampleTrackPose(clip, track, elapsed);
+    });
+    return out;
   }
   function getClipParts(compiledClip) {
     var seen = {};
@@ -557,9 +671,27 @@
       var clip = clips[name];
       if (!clip || typeof clip.duration !== 'number') problems.push('clip "' + name + '" missing duration');
       asArray(clip && clip.tracks).forEach(function (track, trackIndex) {
-        if (!track.part || !rig[track.part]) problems.push('clip "' + name + '" track ' + trackIndex + ' unknown part ref "' + track.part + '"');
+        var where = 'clip "' + name + '" track ' + trackIndex;
+        if (!track.part || !rig[track.part]) problems.push(where + ' unknown part ref "' + track.part + '"');
+        // Section 16.4: a clip may say only what the browser, the robot and
+        // MyOgre all play the same way (sampleClip's rule). The robot drops a
+        // clip whose track has no easing, an easing it does not know or a
+        // delay that is not a whole number of ms, where MyOgre plays it
+        // linear; a spring is baked here, refused by the robot and eased
+        // in-out by MyOgre, and tools/sync-face.py bakes none; a keyframe's
+        // own delay shifts it on the robot and MyOgre and is ignored here; the
+        // robot has no per-keyframe easing and no visibility.
+        var easing = track.easing;
+        if (hasSpring(easing)) problems.push(where + ' easing is a spring, which only the browser plays (use one of ' + EASING_NAMES.join(', ') + ' or [x1, y1, x2, y2])');
+        else if (typeof easing === 'string') { if (EASING_NAMES.indexOf(easing) === -1) problems.push(where + ' easing ' + JSON.stringify(easing) + ' is not one of ' + EASING_NAMES.join(', ')); }
+        else if (!Array.isArray(easing)) problems.push(where + ' needs an easing: one of ' + EASING_NAMES.join(', ') + ' or [x1, y1, x2, y2]');
+        else if (easing.length !== 4 || !easing.every(function (value) { return typeof value === 'number' && isFinite(value); }) || easing[0] < 0 || easing[0] > 1 || easing[2] < 0 || easing[2] > 1) problems.push(where + ' easing ' + JSON.stringify(easing) + ' must be four numbers [x1, y1, x2, y2] with x1 and x2 in [0,1]');
+        if (hasOwn(track, 'delay') && (typeof track.delay !== 'number' || !(track.delay >= 0) || Math.floor(track.delay) !== track.delay)) problems.push(where + ' delay must be a whole number of ms >= 0');
         asArray(track.keyframes).forEach(function (kf, kfIndex) {
-          if (typeof kf.t !== 'number' || kf.t < 0 || kf.t > 1) problems.push('clip "' + name + '" track ' + trackIndex + ' keyframe ' + kfIndex + ' t outside [0,1]: ' + kf.t);
+          if (typeof kf.t !== 'number' || kf.t < 0 || kf.t > 1) problems.push(where + ' keyframe ' + kfIndex + ' t outside [0,1]: ' + kf.t);
+          if (hasOwn(kf, 'delay')) problems.push(where + ' keyframe ' + kfIndex + ' has its own delay (only a track has one)');
+          if (hasOwn(kf, 'easing')) problems.push(where + ' keyframe ' + kfIndex + ' has its own easing (the track easing shapes every stretch)');
+          if (hasOwn(kf, 'visible') && track.part !== 'root' && track.part !== 'svg') problems.push(where + ' keyframe ' + kfIndex + ' sets visible on "' + track.part + '" (only root and svg may)');
         });
       });
     });
@@ -1403,6 +1535,8 @@
   OgreAnimator.validateSpec = validateSpec;
   OgreAnimator.compileSpec = compileSpec;
   OgreAnimator._bakeSpring = bakeSpring;
+  // The reference pose sampler every player is held to (16.4).
+  OgreAnimator.sampleClip = sampleClip;
   // The shared schedule's reference implementation (13.3) and the spec-reading helpers (13.1, 13.2, 13.4).
   OgreAnimator.fnv1a32 = fnv1a32;
   OgreAnimator.mulberry32 = mulberry32;
