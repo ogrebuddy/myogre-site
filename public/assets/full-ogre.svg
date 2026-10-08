@@ -452,12 +452,18 @@
   </g>
   <g id="L-pupil">
     <g id="Layer_1-2-16" data-name="Layer 1-2">
-      <circle class="cls-5" cx="127.77" cy="252.38" r="12.27"></circle>
+      <circle id="L-pupil-dot" class="cls-5" cx="127.77" cy="252.38" r="12.27"></circle>
+      <g id="L-pupil-heart" visibility="hidden">
+        <path class="fx-heart-pupil" transform="translate(127.77 252.38) scale(1.6)" d="M0,-6 C-3,-11 -11,-9 -11,-2 C-11,4 -3,8 0,12 C3,8 11,4 11,-2 C11,-9 3,-11 0,-6 Z"></path>
+      </g>
     </g>
   </g>
   <g id="R-pupil">
     <g id="Layer_1-2-17" data-name="Layer 1-2">
-      <circle class="cls-5" cx="351.45" cy="231.75" r="12.34"></circle>
+      <circle id="R-pupil-dot" class="cls-5" cx="351.45" cy="231.75" r="12.34"></circle>
+      <g id="R-pupil-heart" visibility="hidden">
+        <path class="fx-heart-pupil" transform="translate(351.45 231.75) scale(1.6)" d="M0,-6 C-3,-11 -11,-9 -11,-2 C-11,4 -3,8 0,12 C3,8 11,4 11,-2 C11,-9 3,-11 0,-6 Z"></path>
+      </g>
     </g>
   </g>
   <g id="L-eyelid" visibility="hidden">
@@ -527,6 +533,24 @@
     <g id="Layer_1-2-29" data-name="Layer 1-2">
       <path class="ink-stroke" d="M186.27,252.38 L178.78,277.78 L161.20,296.65 L137.68,305.42 L113.42,302.82 L93.46,290.02 L81.69,270.23 L80.07,247.96 L88.33,227.96 L104.15,214.23 L123.77,209.21 L142.89,213.36 L157.57,225.21 L165.10,241.76 L164.44,259.23 L156.33,273.95 L143.05,283.06 L127.77,285.14 L113.84,280.35 L104.04,270.30 L100.03,257.56 L102.09,245.07 L109.15,235.41 L119.22,230.30 L129.81,230.31 L138.64,234.83 L144.04,242.31 L145.31,250.75 L142.79,258.20 L137.60,263.16 L131.35,264.96 L125.65,263.75 L121.71,260.40 L120.13,256.18 L120.75,252.38"></path>
       <path class="ink-stroke" d="M410.95,231.75 L403.33,257.58 L385.45,276.77 L361.53,285.70 L336.85,283.05 L316.55,270.03 L304.58,249.91 L302.94,227.25 L311.34,206.91 L327.42,192.95 L347.38,187.84 L366.82,192.06 L381.76,204.12 L389.42,220.95 L388.74,238.72 L380.50,253.69 L366.99,262.96 L351.45,265.07 L337.28,260.20 L327.32,249.97 L323.24,237.02 L325.33,224.32 L332.52,214.49 L342.75,209.30 L353.53,209.31 L362.51,213.90 L368.00,221.51 L369.29,230.10 L366.72,237.67 L361.45,242.72 L355.09,244.54 L349.29,243.31 L345.29,239.91 L343.68,235.62 L344.31,231.75"></path>
+    </g>
+  </g>
+  <g id="FX-blush" visibility="hidden">
+    <g id="Layer_1-2-30" data-name="Layer 1-2">
+      <g>
+        <ellipse class="fx-blush-cheek" cx="150" cy="322" rx="34" ry="21"></ellipse>
+        <line class="fx-blush-line" x1="134" y1="314" x2="144" y2="330" stroke-width="3" stroke-linecap="round"></line>
+        <line class="fx-blush-line" x1="146" y1="311" x2="156" y2="333" stroke-width="3" stroke-linecap="round"></line>
+        <line class="fx-blush-line" x1="158" y1="314" x2="168" y2="330" stroke-width="3" stroke-linecap="round"></line>
+        <ellipse class="fx-blush-shine" cx="134" cy="315" rx="6" ry="4"></ellipse>
+      </g>
+      <g>
+        <ellipse class="fx-blush-cheek" cx="342" cy="308" rx="34" ry="21"></ellipse>
+        <line class="fx-blush-line" x1="326" y1="300" x2="336" y2="316" stroke-width="3" stroke-linecap="round"></line>
+        <line class="fx-blush-line" x1="338" y1="297" x2="348" y2="319" stroke-width="3" stroke-linecap="round"></line>
+        <line class="fx-blush-line" x1="350" y1="300" x2="360" y2="316" stroke-width="3" stroke-linecap="round"></line>
+        <ellipse class="fx-blush-shine" cx="326" cy="301" rx="6" ry="4"></ellipse>
+      </g>
     </g>
   </g>
 </svg>

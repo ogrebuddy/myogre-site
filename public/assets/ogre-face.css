@@ -14,3 +14,16 @@ svg.ogre-face #mouth-F, svg.ogre-face #mouth-G, svg.ogre-face #mouth-H, svg.ogre
   transform-box: fill-box;
   transform-origin: center center;
 }
+
+/* Decoration art (spec `decorations`; OgreAnimator.decorate switches the
+   groups by their visibility attribute). Colour comes from the class, so a
+   host recolours with its own rule: the heart takes the pupil slot, the
+   blush is fixed pinks. */
+svg.ogre-face .fx-heart-pupil { fill: var(--ogre-pupil, #ff4d8d); }
+svg.ogre-face .fx-blush-cheek { fill: #ff9ecb; opacity: 0.5; }
+svg.ogre-face .fx-blush-line  { fill: none; stroke: #ff6f9c; }
+svg.ogre-face .fx-blush-shine { fill: #ffffff; opacity: 0.85; }
+/* A hidden heart must not count in its pupil's fill-box: it is larger than
+   the pupil, so it would move the pivot above (2.6 units down) for every
+   pupil rotate and scale while the decoration is off. */
+svg.ogre-face g[visibility="hidden"] > .fx-heart-pupil { display: none; }

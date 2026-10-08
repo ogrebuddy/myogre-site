@@ -358,6 +358,51 @@
     return null;
   }
 
+  // ---- Costumes and decorations (spec 0.6.0, section 14) ----
+  // How a costume shows a clip, the same answer for every host and the gallery:
+  //   { kind: 'all' }                     the rig plays every clip itself
+  //   { kind: 'still' }                   the costume has its own art for the clip
+  //   { kind: 'map', to: <clip> }         it shows another clip it answers
+  //   { kind: 'glyphs', glyphs: {...} }   a glyph costume's set for the clip
+  //   { kind: 'rest', gap: <bool> }       it shows rest: mapped there (gap false),
+  //                                       or the clip is in neither list (gap true)
+  // Every answer carries costume and clip; 'rest' carries the costume's rest
+  // glyphs when it declares them. An unknown costume returns null.
+  function costumeAnswer(spec, costume, clip) {
+    var entry = spec && isObject(spec.costumes) ? spec.costumes[costume] : null;
+    if (!isObject(entry)) return null;
+    var answer = { kind: 'rest', costume: costume, clip: clip, gap: true };
+    var mapped = isObject(entry.clipMap) && hasOwn(entry.clipMap, clip) ? entry.clipMap[clip] : undefined;
+    if (entry.answers === 'all') { answer.kind = 'all'; answer.gap = false; }
+    else if (asArray(entry.answers).indexOf(clip) !== -1) { answer.kind = 'still'; answer.gap = false; }
+    else if (isObject(mapped)) { answer.kind = 'glyphs'; answer.glyphs = clone(mapped); answer.gap = false; }
+    else if (typeof mapped === 'string' && mapped !== 'rest') { answer.kind = 'map'; answer.to = mapped; answer.gap = false; }
+    else if (mapped === 'rest') answer.gap = false;
+    if (answer.kind === 'rest' && isObject(entry.rest)) answer.glyphs = clone(entry.rest);
+    return answer;
+  }
+  // Switches a decoration's art on or off in one copy of the rig: the `show`
+  // ids are visible when on and hidden when off, the `hide` ids the reverse.
+  // Scoped to svgRoot, because a page may hold several copies of the rig with
+  // the same ids. Never throws; a missing id is skipped. Returns whether the
+  // spec has the decoration.
+  function decorate(svgRoot, spec, name, on) {
+    var decoration = spec && isObject(spec.decorations) ? spec.decorations[name] : null;
+    if (!isObject(decoration)) return false;
+    if (!svgRoot || typeof svgRoot.querySelector !== 'function') return true;
+    function setAll(ids, visible) {
+      asArray(ids).forEach(function (id) {
+        if (typeof id !== 'string' || !id) return;
+        var el = null;
+        try { el = svgRoot.querySelector('[id="' + attrEscape(id) + '"]'); } catch (err) { el = null; }
+        if (el && typeof el.setAttribute === 'function') { try { el.setAttribute('visibility', visible ? 'visible' : 'hidden'); } catch (err2) {} }
+      });
+    }
+    setAll(decoration.show, !!on);
+    setAll(decoration.hide, !on);
+    return true;
+  }
+
   function validateSpec(spec) {
     var problems = [];
     if (!isObject(spec)) problems.push('spec must be an object');
@@ -497,11 +542,66 @@
         if (!Array.isArray(blink.renderers) || !blink.renderers.every(function (renderer) { return typeof renderer === 'string'; })) problems.push('blink.renderers must be an array of renderer names');
       }
     }
+    // Spec 0.6.0 (section 14.1, 14.3). Both sections are optional.
+    if (hasOwn(spec, 'costumes')) {
+      if (!isObject(spec.costumes)) problems.push('costumes must be an object');
+      else Object.keys(spec.costumes).forEach(function (name) {
+        var costume = spec.costumes[name];
+        if (!isObject(costume)) { problems.push('costume "' + name + '" must be an object'); return; }
+        var all = costume.answers === 'all';
+        if (!all && !Array.isArray(costume.answers)) problems.push('costume "' + name + '" answers must be "all" or an array of clip names');
+        var answered = all ? [] : asArray(costume.answers);
+        answered.forEach(function (ref) { if (!clipExists(spec, ref)) problems.push('costume "' + name + '" answers unknown clip ref "' + ref + '"'); });
+        var glyphs = {};
+        if (hasOwn(costume, 'glyphs')) {
+          if (!isObject(costume.glyphs)) problems.push('costume "' + name + '" glyphs must be an object of slot -> glyph names');
+          else Object.keys(costume.glyphs).forEach(function (slot) {
+            var list = costume.glyphs[slot];
+            if (!Array.isArray(list) || !list.length || !list.every(function (glyph) { return typeof glyph === 'string' && glyph; })) { problems.push('costume "' + name + '" glyphs.' + slot + ' must be a non-empty array of glyph names'); return; }
+            glyphs[slot] = list;
+          });
+        }
+        function checkGlyphSet(set, where) {
+          if (!hasOwn(costume, 'glyphs')) { problems.push('costume "' + name + '" ' + where + ' is a glyph set but the costume declares no glyphs'); return; }
+          if (!Object.keys(set).length) problems.push('costume "' + name + '" ' + where + ' is an empty glyph set');
+          Object.keys(set).forEach(function (slot) {
+            if (!glyphs[slot]) { if (isObject(costume.glyphs) && !hasOwn(costume.glyphs, slot)) problems.push('costume "' + name + '" ' + where + ' unknown glyph slot "' + slot + '"'); return; }
+            if (glyphs[slot].indexOf(set[slot]) === -1) problems.push('costume "' + name + '" ' + where + ' ' + slot + ' glyph ' + JSON.stringify(set[slot]) + ' is not declared in glyphs.' + slot);
+          });
+        }
+        if (hasOwn(costume, 'rest')) {
+          if (!isObject(costume.rest)) problems.push('costume "' + name + '" rest must be a glyph set');
+          else checkGlyphSet(costume.rest, 'rest');
+        }
+        if (hasOwn(costume, 'clipMap')) {
+          if (!isObject(costume.clipMap)) problems.push('costume "' + name + '" clipMap must be an object');
+          else Object.keys(costume.clipMap).forEach(function (ref) {
+            var target = costume.clipMap[ref];
+            if (!clipExists(spec, ref)) problems.push('costume "' + name + '" clipMap unknown clip ref "' + ref + '"');
+            if (!all && answered.indexOf(ref) !== -1) problems.push('costume "' + name + '" clip "' + ref + '" is in both answers and clipMap');
+            if (isObject(target)) checkGlyphSet(target, 'clipMap "' + ref + '"');
+            else if (typeof target !== 'string') problems.push('costume "' + name + '" clipMap "' + ref + '" must be a clip name, "rest" or a glyph set');
+            else if (target !== 'rest' && !(all ? clipExists(spec, target) : answered.indexOf(target) !== -1)) problems.push('costume "' + name + '" clipMap "' + ref + '" -> "' + target + '" is not a clip the costume answers (or "rest")');
+          });
+        }
+      });
+    }
+    if (hasOwn(spec, 'decorations')) {
+      if (!isObject(spec.decorations)) problems.push('decorations must be an object');
+      else Object.keys(spec.decorations).forEach(function (name) {
+        var decoration = spec.decorations[name];
+        if (!isObject(decoration)) { problems.push('decoration "' + name + '" must be an object'); return; }
+        ['show', 'hide'].forEach(function (list) {
+          var ids = decoration[list];
+          if (!Array.isArray(ids) || !ids.length || !ids.every(function (id) { return typeof id === 'string' && id; })) problems.push('decoration "' + name + '" ' + list + ' must be a non-empty array of element ids');
+        });
+      });
+    }
     if (problems.length) throw new Error('Invalid ogre animation spec:\n- ' + problems.join('\n- '));
     return true;
   }
   function compileSpec(spec) {
-    var compiled = { meta: clone(spec.meta || {}), rig: clone(spec.rig || {}), clips: {}, pools: clone(spec.pools || {}), sequences: clone(spec.sequences || {}), oneshots: clone(spec.oneshots || {}), states: clone(spec.states || {}), reducedMotionDefaults: clone(spec.reducedMotionDefaults || {}), mood: isObject(spec.mood) ? clone(spec.mood) : null, schedule: isObject(spec.schedule) ? clone(spec.schedule) : null, reactions: clone(spec.reactions || {}), blink: isObject(spec.blink) ? clone(spec.blink) : null };
+    var compiled = { meta: clone(spec.meta || {}), rig: clone(spec.rig || {}), clips: {}, pools: clone(spec.pools || {}), sequences: clone(spec.sequences || {}), oneshots: clone(spec.oneshots || {}), states: clone(spec.states || {}), reducedMotionDefaults: clone(spec.reducedMotionDefaults || {}), mood: isObject(spec.mood) ? clone(spec.mood) : null, schedule: isObject(spec.schedule) ? clone(spec.schedule) : null, reactions: clone(spec.reactions || {}), blink: isObject(spec.blink) ? clone(spec.blink) : null, costumes: clone(spec.costumes || {}), decorations: clone(spec.decorations || {}) };
     Object.keys(spec.clips || {}).forEach(function (name) {
       var clip = spec.clips[name];
       var out = { name: name, duration: clip.duration, loop: clip.loop === true, meta: clone(clip.meta || {}), mouthViseme: clip.mouthViseme || null, mood: typeof clip.mood === 'string' ? clip.mood : null, tracks: asArray(clip.tracks).map(function (track) { return compileTrack(clip, track); }) };
@@ -1139,6 +1239,9 @@
   OgreAnimator.moodBandFor = moodBandFor;
   OgreAnimator.moodNames = moodNames;
   OgreAnimator.clipForMood = clipForMood;
+  // Costumes and decorations (14.1, 14.3): one resolver and one switch for every host.
+  OgreAnimator.costumeAnswer = costumeAnswer;
+  OgreAnimator.decorate = decorate;
 
   if (typeof window !== 'undefined') window.OgreAnimator = OgreAnimator;
   if (typeof module !== 'undefined' && module.exports) module.exports = OgreAnimator;

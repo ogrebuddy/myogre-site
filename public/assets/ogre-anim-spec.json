@@ -1,7 +1,7 @@
 {
   "meta": {
     "schemaVersion": 1,
-    "specVersion": "0.5.0",
+    "specVersion": "0.6.0",
     "generator": "batch1-transcription",
     "reference": { "width": 469.83, "height": 474.51, "units": "svg-user-units" },
     "blendMs": 150,
@@ -741,5 +741,81 @@
     "offline":         { "face": "face-dead-eyes",                              "priority": 40,  "holdMs": 0,    "source": "client" }
   },
   "blink": { "everyMs": [3000, 6000], "durationMs": 120, "renderers": ["pixel", "robot"], "note": "Timing shared, art per costume (the pixel skin's blink layer, the robot's lid layer). The browser joins when lid art replaces the placeholders: add \"browser\" and a face-blink clip." },
+  "costumes": {
+    "drawn": {
+      "name": "The drawn face", "kind": "rig", "art": "full-ogre.svg",
+      "renderers": ["browser", "robot"],
+      "apps": ["Ogrebuddy", "Ogrebite", "Ogrebrain", "Ogrechan", "myog.re"],
+      "answers": "all"
+    },
+    "pixel-ogre": {
+      "name": "The pixel skin", "kind": "stills",
+      "art": { "repo": "MyOgre", "path": "App/Assets/PixelOgre/pixel-ogre.json", "mirror": "costumes/pixel-ogre.json" },
+      "renderers": ["pixel"], "apps": ["MyOgre"],
+      "answers": [
+        "face-excited", "face-big-eyes", "face-wink", "face-flirty", "face-eyelash-flutter",
+        "face-mischief", "face-smug", "face-surprised", "face-scared", "face-nervous",
+        "face-wild", "face-thinking", "face-confused", "face-daydream", "face-side-eye",
+        "face-shifty", "face-roll-eyes", "face-crossed", "face-squint", "face-intense",
+        "face-angry", "face-grumpy", "face-pout", "face-unimpressed", "face-bored",
+        "face-sleepy", "face-cry", "face-dizzy", "face-hypno", "face-dead-eyes"
+      ],
+      "clipMap": { "face-look": "face-shifty", "face-talk": "rest", "face-talk-end": "rest", "face-idle-grin": "rest" },
+      "bodies": "root", "blink": true, "extras": ["love"]
+    },
+    "heisei-tama": {
+      "name": "Heisei Tama", "kind": "glyphs",
+      "art": { "repo": "ogrebuddy", "path": "theme-heisei.css" },
+      "renderers": ["browser"], "apps": ["Ogrebuddy", "Ogrebite"],
+      "glyphs": { "face": ["blink", "wander", "spin", "sleepy"], "mouth": ["fang", "grin", "smile", "frown", "oh", "talk", "cat"] },
+      "rest": { "face": "blink", "mouth": "fang" },
+      "answers": [],
+      "clipMap": {
+        "face-idle-grin":        { "face": "blink",  "mouth": "grin" },
+        "face-excited":          { "face": "blink",  "mouth": "grin" },
+        "face-wild":             { "face": "blink",  "mouth": "grin" },
+        "face-mischief":         { "face": "blink",  "mouth": "grin" },
+        "face-smug":             { "face": "blink",  "mouth": "cat" },
+        "face-wink":             { "face": "blink",  "mouth": "cat" },
+        "face-flirty":           { "face": "blink",  "mouth": "cat" },
+        "face-eyelash-flutter":  { "face": "blink",  "mouth": "cat" },
+        "face-surprised":        { "face": "blink",  "mouth": "oh" },
+        "face-scared":           { "face": "blink",  "mouth": "oh" },
+        "face-big-eyes":         { "face": "blink",  "mouth": "oh" },
+        "face-angry":            { "face": "blink",  "mouth": "frown" },
+        "face-grumpy":           { "face": "blink",  "mouth": "frown" },
+        "face-pout":             { "face": "blink",  "mouth": "frown" },
+        "face-cry":              { "face": "blink",  "mouth": "frown" },
+        "face-unimpressed":      { "face": "blink",  "mouth": "frown" },
+        "face-intense":          { "face": "blink",  "mouth": "frown" },
+        "face-sleepy":           { "face": "sleepy", "mouth": "smile" },
+        "face-daydream":         { "face": "sleepy", "mouth": "smile" },
+        "face-bored":            { "face": "sleepy", "mouth": "frown" },
+        "face-dead-eyes":        { "face": "sleepy", "mouth": "frown" },
+        "face-dizzy":            { "face": "spin",   "mouth": "oh" },
+        "face-hypno":            { "face": "spin",   "mouth": "oh" },
+        "face-roll-eyes":        { "face": "spin",   "mouth": "oh" },
+        "face-crossed":          { "face": "spin",   "mouth": "oh" },
+        "face-confused":         { "face": "spin",   "mouth": "oh" },
+        "face-look":             { "face": "wander", "mouth": "fang" },
+        "face-shifty":           { "face": "wander", "mouth": "fang" },
+        "face-side-eye":         { "face": "wander", "mouth": "fang" },
+        "face-thinking":         { "face": "wander", "mouth": "fang" },
+        "face-nervous":          { "face": "wander", "mouth": "fang" },
+        "face-squint":           { "face": "wander", "mouth": "fang" },
+        "face-talk":             { "face": "blink",  "mouth": "talk" },
+        "face-talk-end":         "rest"
+      },
+      "bodies": "none", "blink": false
+    }
+  },
+  "decorations": {
+    "kawaii": {
+      "name": "Kawaii hearts and blush",
+      "show": ["FX-blush", "L-pupil-heart", "R-pupil-heart"],
+      "hide": ["L-pupil-dot", "R-pupil-dot"],
+      "renderers": ["browser"], "apps": ["Ogrebuddy", "Ogrebite"]
+    }
+  },
   "reducedMotionDefaults": { "mode": "pose", "allow": [] }
 }
